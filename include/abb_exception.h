@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-namespace abb
+namespace abb_robot
 {
 
 class AbbException: public std::runtime_error
