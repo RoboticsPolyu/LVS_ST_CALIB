@@ -18,10 +18,13 @@ namespace abb_robot
             using TrajectoryGoal = abb::egm::wrapper::trajectory::TrajectoryGoal;
             using PointGoal = abb::egm::wrapper::trajectory::PointGoal;
             using CartesianPose = abb::egm::wrapper::CartesianPose;
+            using Joints = abb::egm::wrapper::Joints;
+
             enum egm_mode_t: uint8_t
             {
-                TRAJECTORY = 0,
-                STATIC_JOINT_GOAL,
+                JOINT_TRAJECTORY = 0,
+                POSE_TRAJECTORY,
+                POSE_STATIC_JOINT_GOAL,
                 STATIC_POSE_GOAL,
                 JOINT_CONTROLER,
                 POSE_CONTROLER,
@@ -48,19 +51,25 @@ namespace abb_robot
 
             egm_controler_wrapper() = delete;
             egm_controler_wrapper(abb_egm_wrapper_config& config);
-
-            bool egm_start_communication();
             ~egm_controler_wrapper();
-            void start();
             
+            /**
+             * set egm callback function
+             */
             void set_egm_callback(egm_callback hander)
             {
                 egm_callback_hander_ = hander;
             }
 
-            void add_next_pose(CartesianPose& next_pose);
+            /**
+             * set target pose
+             */
+            void set_next_pose(CartesianPose& next_pose);
 
-        private:
+        private: 
+            bool egm_start_communication();
+            void start();
+
             std::shared_ptr<abb::egm::EGMControllerInterface> egm_interface_;
             boost::asio::io_service io_service_;
             boost::thread_group thread_group_;
@@ -72,6 +81,8 @@ namespace abb_robot
             std::shared_ptr<std::thread> abb_egm_controler_thread_;
             egm_callback egm_callback_hander_;
             CartesianPose pose_next_;
+            Joints joint_next;
+
             std::mutex mutex_pose_;
 
             const int egm_rate = 250.0;
