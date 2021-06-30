@@ -31,8 +31,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -DNDEBUG -Wno-reorder -O2" CACHE
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "/usr/local/cmake/lib/cmake")
 
-# abb libegm
-find_package(abb_libegm)
+# # abb libegm
+# find_package(abb_libegm)
 
 # third party libs
 # eigen
@@ -47,12 +47,12 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # find_package(Glog REQUIRED)
 # include_directories(${GLOG_INCLUDE_DIRS})
 
-# tbb
-find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
+# # tbb
+# find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
-# gtsam
-find_package(GTSAM REQUIRED)
-include_directories(${GTSAM_INCLUDE_DIR})
+# # gtsam
+# find_package(GTSAM REQUIRED)
+# include_directories(${GTSAM_INCLUDE_DIR})
 
 # include
 include_directories(include)
@@ -65,36 +65,51 @@ IF(UNIX)
 ELSEIF(APPLE)    
 ENDIF()
 
-message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
-add_library(wio_factor_lib ${WIO_SOURCE})
-target_include_directories(wio_factor_lib PUBLIC ${GTSAM_INCLUDE_DIR})
-target_link_libraries(wio_factor_lib PUBLIC gtsam gtsam_unstable)
-set_target_properties(wio_factor_lib PROPERTIES
-    OUTPUT_NAME         wio_factor_lib
+# message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
+# add_library(wio_factor_lib ${WIO_SOURCE})
+# target_include_directories(wio_factor_lib PUBLIC ${GTSAM_INCLUDE_DIR})
+# target_link_libraries(wio_factor_lib PUBLIC gtsam gtsam_unstable)
+# set_target_properties(wio_factor_lib PROPERTIES
+#     OUTPUT_NAME         wio_factor_lib
+#     CLEAN_DIRECT_OUTPUT 1
+#     VERSION             ${wio_factor_version}
+#     SOVERSION           ${wio_factor_soversion})
+
+set(XYF_CALIBRATION_SOURCE
+    src/xyf_cal_lib.cpp)
+
+add_library(xyf_cal_lib ${XYF_CALIBRATION_SOURCE})
+target_include_directories(xyf_cal_lib PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})
+target_link_libraries(xyf_cal_lib PUBLIC ${OpenCV_LIBS})
+set_target_properties(xyf_cal_lib PROPERTIES
+    OUTPUT_NAME         xyf_cal_lib
     CLEAN_DIRECT_OUTPUT 1
-    VERSION             ${wio_factor_version}
-    SOVERSION           ${wio_factor_soversion})
+    VERSION             1.0
+    SOVERSION           1.0)
 
-set(ABB_SOURCE
-    src/abb_egm_wrapper)
+# set(ABB_SOURCE
+#     src/abb_egm_wrapper)
 
-add_library(abb_wrapper_lib ${ABB_SOURCE})
-target_include_directories(abb_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})
-target_link_libraries(abb_wrapper_lib PUBLIC gtsam gtsam_unstable ${abb_libegm_LIBRARIES})
-set_target_properties(abb_wrapper_lib PROPERTIES
-    OUTPUT_NAME         abb_wrapper_lib
-    CLEAN_DIRECT_OUTPUT 1
-    VERSION             ${abb_wrapper_version}
-    SOVERSION           ${abb_wrapper_soversion})
+# add_library(abb_wrapper_lib ${ABB_SOURCE})
+# target_include_directories(abb_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})
+# target_link_libraries(abb_wrapper_lib PUBLIC gtsam gtsam_unstable ${abb_libegm_LIBRARIES})
+# set_target_properties(abb_wrapper_lib PROPERTIES
+#     OUTPUT_NAME         abb_wrapper_lib
+#     CLEAN_DIRECT_OUTPUT 1
+#     VERSION             ${abb_wrapper_version}
+#     SOVERSION           ${abb_wrapper_soversion})
 
-add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
-target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
+# add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
+# target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
 
-add_executable(wheel_imu_pim app/test_wheel_imu_pim.cpp)
-target_link_libraries(wheel_imu_pim gtsam wio_factor_lib)
+# add_executable(wheel_imu_pim app/test_wheel_imu_pim.cpp)
+# target_link_libraries(wheel_imu_pim gtsam wio_factor_lib)
 
-add_executable(wheel_imu_error app/test_wheel_imu_error.cpp)
-target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
+# add_executable(wheel_imu_error app/test_wheel_imu_error.cpp)
+# target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 
-add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
-target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
+# add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
+# target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
+
+add_executable(calibration_test_i app/calibration_test_i.cpp)
+target_link_libraries(calibration_test_i xyf_cal_lib)
