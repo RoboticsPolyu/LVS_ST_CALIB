@@ -20,6 +20,20 @@ namespace abb_robot
             using CartesianPose = abb::egm::wrapper::CartesianPose;
             using Joints = abb::egm::wrapper::Joints;
 
+            typedef struct CtrlPoint
+            {
+                uint32_t sequence;
+                float64_t value[6];
+                void operator()(const CtrlPoint& ctrl_point)
+                {   
+                    sequence = ctrl_point.sequence;
+                    for(uint32_t i = 0; i < 6; i++)
+                    {
+                        value[i] = ctrl_point.value[i];
+                    }
+                }
+            }CtrlPoint;
+
             enum egm_mode_t: uint8_t
             {
                 JOINT_TRAJECTORY = 0,
@@ -47,7 +61,7 @@ namespace abb_robot
     class egm_controler_wrapper : public egm_base_wrapper
     {
         public:
-            typedef std::function<void(int, CartesianPose&)> egm_callback;
+            typedef std::function<void(CtrlPoint&)> egm_callback;
 
             egm_controler_wrapper() = delete;
             egm_controler_wrapper(abb_egm_wrapper_config& config);
@@ -64,7 +78,7 @@ namespace abb_robot
             /**
              * set target pose
              */
-            void set_next_pose(CartesianPose& next_pose);
+            void set_next_ctrl_point(const CtrlPoint& next_ctrl_point);
 
         private: 
             bool egm_start_communication();
@@ -80,8 +94,7 @@ namespace abb_robot
 
             std::shared_ptr<std::thread> abb_egm_controler_thread_;
             egm_callback egm_callback_hander_;
-            CartesianPose pose_next_;
-            Joints joint_next;
+            CtrlPoint next_ctrl_point_;
 
             std::mutex mutex_pose_;
 

@@ -85,7 +85,7 @@ set_target_properties(wio_factor_lib PROPERTIES
     SOVERSION           ${wio_factor_soversion})
 
 set(ABB_SOURCE
-    src/abb_egm_wrapper)
+    src/abb_egm_wrapper.cpp)
 
 add_library(abb_wrapper_lib ${ABB_SOURCE})
 target_include_directories(abb_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})

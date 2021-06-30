@@ -11,8 +11,15 @@ namespace abb_robot
     egm_controler_wrapper::egm_controler_wrapper(egm_controler_wrapper::abb_egm_wrapper_config& config)
     {
         abb_egm_config_.port = config.port;
+        abb_egm_config_.egm_mode = config.egm_mode;
 
-        egm_interface_ = std::make_shared<abb::egm::EGMControllerInterface>(io_service_, abb_egm_config_.port);
+        abb::egm::BaseConfiguration configuration;
+        if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_VEL_CONTROLER || abb_egm_config_.egm_mode == egm_mode_t::POSE_VEL_CONTROLER)
+        {
+            configuration.use_velocity_outputs = true;
+        }
+
+        egm_interface_ = std::make_shared<abb::egm::EGMControllerInterface>(io_service_, abb_egm_config_.port, configuration);
 
         if(!egm_interface_->isInitialized())
         {   
@@ -36,12 +43,8 @@ namespace abb_robot
 
     void egm_controler_wrapper::start()
     {
-        int sequence_number;
-        CartesianPose initial_pose;
-        CartesianPose callback_pose;
-
-        Joints initial_joints;
-        Joints callback_joints;
+        uint32_t sequence_number;
+        CtrlPoint callback_ctrl_point;
 
         while(true)
         {
@@ -51,36 +54,52 @@ namespace abb_robot
                 // Read the message received from the EGM client.
                 egm_interface_->read(&input_);
                 sequence_number = input_.header().sequence_number();
-                callback_pose = input_.feedback().robot().cartesian().pose();
+                callback_ctrl_point.sequence = sequence_number;
 
-                egm_callback_hander_(sequence_number, callback_pose);
-
-                if(sequence_number == 0)
+                if(abb_egm_config_.egm_mode == egm_mode_t::POSE_CONTROLER)
                 {
-                    // Reset all references, if it is the first message.
-                    output_.Clear();
-                    initial_pose.CopyFrom(callback_pose);
-                    std::cout << "initial pose x : " << callback_pose.position().x() << std::endl;
-                    std::cout << "initial pose y : " << callback_pose.position().y() << std::endl;
-
-                    pose_next_.CopyFrom(initial_pose);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->CopyFrom(initial_pose);
+                    CartesianPose callback_pose = input_.feedback().robot().cartesian().pose();
+                    callback_ctrl_point.value[0] = callback_pose.position().x();
+                    callback_ctrl_point.value[1] = callback_pose.position().y();
+                    callback_ctrl_point.value[2] = callback_pose.position().z();
+                    callback_ctrl_point.value[3] = callback_pose.euler().x();
+                    callback_ctrl_point.value[4] = callback_pose.euler().y();
+                    callback_ctrl_point.value[5] = callback_pose.position().x();
+                }
+                else if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_CONTROLER)
+                {
                 }
                 else
                 {
-                    mutex_pose_.lock();
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->CopyFrom(pose_next_);
-                    mutex_pose_.unlock();
-
-                    // if(sequence_number%egm_rate == 0)
-                    // {
-                    //     std::cout << "References: " <<
-                    //                 "X position = " << pose_next_.position().x() << " [mm] | " <<
-                    //                 "Y position = " << pose_next_.position().y() << " [mm] | " << 
-                    //                 "Y position = " << pose_next_.position().z() << " [mm] | " << std::endl;
-                    // }
+                    std::cout << "No such egm mode: " << abb_egm_config_.egm_mode << std::endl;
+                    return;
                 }
+                
+                std::cout << "initial value1 : " << callback_ctrl_point.value[0] << std::endl;
+                std::cout << "initial value2 : " << callback_ctrl_point.value[1] << std::endl;
+                egm_callback_hander_(callback_ctrl_point);
 
+                mutex_pose_.lock();
+                if(abb_egm_config_.egm_mode == egm_mode_t::POSE_CONTROLER)
+                {
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[0]);
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[1]);
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[2]);
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[3]);
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[4]);
+                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[5]);
+                }
+                else if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_CONTROLER)
+                {
+
+                }
+                else
+                {
+                    std::cout << "No such egm mode: " << abb_egm_config_.egm_mode << std::endl;
+                    return;
+                }
+                mutex_pose_.unlock();
+                
                 // Write references back to the EGM client.
                 egm_interface_->write(output_);
             }
@@ -112,10 +131,10 @@ namespace abb_robot
         return true;
     }
 
-    void egm_controler_wrapper::set_next_pose(CartesianPose& next_pose)
+    void egm_controler_wrapper::set_next_ctrl_point(const CtrlPoint& next_ctrl_point)
     {
         mutex_pose_.lock();
-        pose_next_.CopyFrom(next_pose);
+        next_ctrl_point_(next_ctrl_point);
         mutex_pose_.unlock();
     }
 
