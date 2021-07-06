@@ -76,7 +76,8 @@ ENDIF()
 #     SOVERSION           ${wio_factor_soversion})
 
 set(XYF_CALIBRATION_SOURCE
-    src/xyf_cal_lib.cpp)
+    src/xyf_cal_lib.cpp
+    src/light_cal.cpp)
 
 add_library(xyf_cal_lib ${XYF_CALIBRATION_SOURCE})
 target_include_directories(xyf_cal_lib PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})

@@ -2,7 +2,6 @@
 
 int main(void)
 {
-
     calibration::cm_xyf::MyStruct cm_data;
 
     cm_data.image_path = "G://calibration//test_4//test_4.bmp";
