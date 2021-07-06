@@ -90,20 +90,14 @@ set_target_properties(abb_wrapper_lib PROPERTIES
 set(SENSORS_SOURCE
     src/daheng_camera_wrapper.cpp)
 add_library(sensors_wrapper_lib ${SENSORS_SOURCE})
-#link_directories("/usr/lib/")
-# link_libraries(
-#     /usr/lib/libgxiapi.so
-# )
-target_include_directories(sensors_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})
-target_link_libraries(sensors_wrapper_lib PUBLIC gtsam gtsam_unstable gxiapi pthread ${OpenCV_LIBS})
+target_include_directories(sensors_wrapper_lib PUBLIC })
+target_link_libraries(sensors_wrapper_lib PUBLIC gxiapi pthread ${OpenCV_LIBS})
 
 set_target_properties(sensors_wrapper_lib PROPERTIES
     OUTPUT_NAME         sensors_wrapper_lib
     CLEAN_DIRECT_OUTPUT 1
     VERSION             ${abb_wrapper_version}
     SOVERSION           ${abb_wrapper_soversion}
-    COMPILE_FLAGS       "-pthread"
-    LINK_FLAGS          "-pthread"
 )
 
 add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
@@ -118,5 +112,5 @@ target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
 target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
-add_executable(daheng_camera app/test_camera.cpp)
+add_executable(daheng_camera app/test_daheng_camera.cpp)
 target_link_libraries(daheng_camera sensors_wrapper_lib)
