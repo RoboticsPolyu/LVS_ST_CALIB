@@ -14,16 +14,16 @@ class abb_egm_wrapper_app
         {
             first_callback_ = true;
 
-            abb_robot::egm_base_wrapper::abb_egm_wrapper_config config;
+            abb_robot::EgmBaseWrapper::AbbEgmWrapperConfig config;
             config.port = 6512;
-            egm_controler_ptr_ = std::make_shared<abb_robot::egm_controler_wrapper>(config);
-            egm_controler_ptr_->set_egm_callback(std::bind(&abb_egm_wrapper_app::abb_egm_callback, this, std::placeholders::_1));
+            egm_controler_ptr_ = std::make_shared<abb_robot::EgmControlerWrapper>(config);
+            egm_controler_ptr_->SetEgmCallback(std::bind(&abb_egm_wrapper_app::abb_egm_callback, this, std::placeholders::_1));
 
             ros::spin();
         }
 
     private:
-        void abb_egm_callback(abb_robot::egm_controler_wrapper::CtrlPoint ctrl_point)
+        void abb_egm_callback(abb_robot::EgmControlerWrapper::CtrlPoint ctrl_point)
         {
             double time = ctrl_point.sequence /((double) 250);
             std::cout << " --------------------------------- " << std::endl;
@@ -44,13 +44,13 @@ class abb_egm_wrapper_app
             next_control_point_.value[0] = position_reference;
             next_control_point_.value[5] = orientation_reference;
 
-            egm_controler_ptr_->set_next_ctrl_point(next_control_point_);
+            egm_controler_ptr_->SetNextCtrlPoint(next_control_point_);
 
         }
 
-        std::shared_ptr<abb_robot::egm_controler_wrapper> egm_controler_ptr_;
-        abb_robot::egm_controler_wrapper::CtrlPoint initail_control_point_;
-        abb_robot::egm_controler_wrapper::CtrlPoint next_control_point_;
+        std::shared_ptr<abb_robot::EgmControlerWrapper> egm_controler_ptr_;
+        abb_robot::EgmControlerWrapper::CtrlPoint initail_control_point_;
+        abb_robot::EgmControlerWrapper::CtrlPoint next_control_point_;
 
         double position_amplitude_ = 100.0;
         double orientation_amplitude_ = -10.0;

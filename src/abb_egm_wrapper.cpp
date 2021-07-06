@@ -4,17 +4,17 @@
 
 namespace abb_robot
 {
-    egm_base_wrapper::egm_base_wrapper()
+    EgmBaseWrapper::EgmBaseWrapper()
     {
     }
 
-    egm_controler_wrapper::egm_controler_wrapper(egm_controler_wrapper::abb_egm_wrapper_config& config)
+    EgmControlerWrapper::EgmControlerWrapper(EgmControlerWrapper::AbbEgmWrapperConfig& config)
     {
         abb_egm_config_.port = config.port;
         abb_egm_config_.egm_mode = config.egm_mode;
 
         abb::egm::BaseConfiguration configuration;
-        if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_VEL_CONTROLER || abb_egm_config_.egm_mode == egm_mode_t::POSE_VEL_CONTROLER)
+        if(abb_egm_config_.egm_mode == EgmMode_t::JOINT_VEL_CONTROLER || abb_egm_config_.egm_mode == EgmMode_t::POSE_VEL_CONTROLER)
         {
             configuration.use_velocity_outputs = true;
         }
@@ -30,18 +30,18 @@ namespace abb_robot
 
         // Spin up a thread to run the io_service.
         thread_group_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
-        egm_start_communication();
-        abb_egm_controler_thread_ = std::shared_ptr<std::thread >(new std::thread(std::bind(&egm_controler_wrapper::start, this)));
+        EgmStartCommunication();
+        abb_egm_controler_thread_ = std::shared_ptr<std::thread >(new std::thread(std::bind(&EgmControlerWrapper::Start, this)));
 
     }
 
-    egm_controler_wrapper::~egm_controler_wrapper()
+    EgmControlerWrapper::~EgmControlerWrapper()
     {
         io_service_.stop();
         thread_group_.join_all();
     }
 
-    void egm_controler_wrapper::start()
+    void EgmControlerWrapper::Start()
     {
         uint32_t sequence_number;
         CtrlPoint callback_ctrl_point;
@@ -56,17 +56,12 @@ namespace abb_robot
                 sequence_number = input_.header().sequence_number();
                 callback_ctrl_point.sequence = sequence_number;
 
-                if(abb_egm_config_.egm_mode == egm_mode_t::POSE_CONTROLER)
+                if(abb_egm_config_.egm_mode == EgmMode_t::POSE_CONTROLER)
                 {
                     CartesianPose callback_pose = input_.feedback().robot().cartesian().pose();
-                    callback_ctrl_point.value[0] = callback_pose.position().x();
-                    callback_ctrl_point.value[1] = callback_pose.position().y();
-                    callback_ctrl_point.value[2] = callback_pose.position().z();
-                    callback_ctrl_point.value[3] = callback_pose.euler().x();
-                    callback_ctrl_point.value[4] = callback_pose.euler().y();
-                    callback_ctrl_point.value[5] = callback_pose.position().x();
+                    Convertor(callback_pose, callback_ctrl_point);
                 }
-                else if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_CONTROLER)
+                else if(abb_egm_config_.egm_mode == EgmMode_t::JOINT_CONTROLER)
                 {
                 }
                 else
@@ -80,16 +75,11 @@ namespace abb_robot
                 egm_callback_hander_(callback_ctrl_point);
 
                 mutex_pose_.lock();
-                if(abb_egm_config_.egm_mode == egm_mode_t::POSE_CONTROLER)
+                if(abb_egm_config_.egm_mode == EgmMode_t::POSE_CONTROLER)
                 {
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[0]);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[1]);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_position()->set_x(next_ctrl_point_.value[2]);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[3]);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[4]);
-                    output_.mutable_robot()->mutable_cartesian()->mutable_pose()->mutable_euler()->set_x(next_ctrl_point_.value[5]);
+                    Convertor(next_ctrl_point_, output_.mutable_robot()->mutable_cartesian()->mutable_pose());
                 }
-                else if(abb_egm_config_.egm_mode == egm_mode_t::JOINT_CONTROLER)
+                else if(abb_egm_config_.egm_mode == EgmMode_t::JOINT_CONTROLER)
                 {
 
                 }
@@ -107,9 +97,29 @@ namespace abb_robot
 
     }
 
-    bool egm_controler_wrapper::egm_start_communication()
+    void EgmControlerWrapper::Convertor(const CartesianPose& pose, CtrlPoint& ctrl_point)
     {
-        std::cout << "1: Wait for an EGM communication session to start..." << std::endl;
+        ctrl_point.value[0] = pose.position().x();
+        ctrl_point.value[1] = pose.position().y();
+        ctrl_point.value[2] = pose.position().z();
+        ctrl_point.value[3] = pose.euler().x();
+        ctrl_point.value[4] = pose.euler().y();
+        ctrl_point.value[5] = pose.euler().x();
+    }
+    
+    void EgmControlerWrapper::Convertor(const CtrlPoint& ctrl_point, CartesianPose* pose)
+    {
+        pose->mutable_position()->set_x(ctrl_point.value[0]);
+        pose->mutable_position()->set_y(ctrl_point.value[1]);
+        pose->mutable_position()->set_z(ctrl_point.value[2]);
+        pose->mutable_euler()->set_x(ctrl_point.value[3]);
+        pose->mutable_euler()->set_y(ctrl_point.value[4]);
+        pose->mutable_euler()->set_z(ctrl_point.value[5]);
+    }
+
+    bool EgmControlerWrapper::EgmStartCommunication()
+    {
+        std::cout << "1: Wait for an EGM communication session to Start..." << std::endl;
         bool wait = true;
         
         while(wait)
@@ -118,7 +128,7 @@ namespace abb_robot
             {
                 if(egm_interface_->getStatus().rapid_execution_state() == abb::egm::wrapper::Status_RAPIDExecutionState_RAPID_UNDEFINED)
                 {
-                    std::cout << "RAPID execution state is UNDEFINED (might happen first time after controller start/restart). Try to restart the RAPID program." << std::endl;
+                    std::cout << "RAPID execution state is UNDEFINED (might happen first time after controller Start/reStart). Try to reStart the RAPID program." << std::endl;
                 }
                 else
                 {
@@ -131,23 +141,23 @@ namespace abb_robot
         return true;
     }
 
-    void egm_controler_wrapper::set_next_ctrl_point(const CtrlPoint& next_ctrl_point)
+    void EgmControlerWrapper::SetNextCtrlPoint(const CtrlPoint& next_ctrl_point)
     {
         mutex_pose_.lock();
         next_ctrl_point_(next_ctrl_point);
         mutex_pose_.unlock();
     }
 
-    egm_trajectory_wrapper::egm_trajectory_wrapper(abb_egm_wrapper_config& config)
+    EgmTrajectoryWrapper::EgmTrajectoryWrapper(AbbEgmWrapperConfig& config)
     {
     }
 
-    void egm_trajectory_wrapper::add_egm_trajectory(TrajectoryGoal& trajectory)
+    void EgmTrajectoryWrapper::AddEgmTrajectory(TrajectoryGoal& trajectory)
     {
         egm_interface_->addTrajectory(trajectory);
     }
 
-    void egm_trajectory_wrapper::set_point(TrajectoryGoal& trajectory, bool reach, float64_t duration, 
+    void EgmTrajectoryWrapper::SetPoint(TrajectoryGoal& trajectory, bool reach, float64_t duration, 
         float64_t value1, float64_t value2, float64_t value3, float64_t value4, float64_t value5, float64_t value6)
     {
         PointGoal* point_goal;
