@@ -108,6 +108,10 @@ target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
 target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
-add_executable(abb_egm_wrapper_test app/test_abb_egm_wrapper.cpp)
-add_dependencies(abb_egm_wrapper_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(abb_egm_wrapper_test abb_wrapper_lib ${catkin_LIBRARIES})
+add_executable(abb_egm_wrapper_controler app/test_abb_egm_wrapper.cpp)
+add_dependencies(abb_egm_wrapper_controler ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARIES})
+
+add_executable(abb_egm_wrapper_trajectory app/test_abb_egm_trajectory.cpp)
+add_dependencies(abb_egm_wrapper_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(abb_egm_wrapper_trajectory abb_wrapper_lib ${catkin_LIBRARIES})
