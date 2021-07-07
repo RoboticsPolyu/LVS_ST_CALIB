@@ -17,7 +17,7 @@ class cm_xyf
 	public:
 		typedef struct CorssPointGroup
 		{
-			Eigen::Vector2f corss_point;
+			Eigen::Vector2f cross_point;
 			bool point_mode; // true: 2+1  false: 1+2
 			Eigen::Vector2f points[3];
 		}CorssPointGroup;
@@ -26,8 +26,8 @@ class cm_xyf
 	    {
 		    int corner_rows;
 		    int corner_cols;
-		    int corners_ize_rows;
-		    int corners_ize_cols;
+		    int cornersize_rows;
+		    int cornersize_cols;
 		    string fold_path;
 
 			void operator()(const MyStruct & my_struct)
@@ -35,8 +35,8 @@ class cm_xyf
 			   fold_path = my_struct.fold_path;
 			   corner_cols = my_struct.corner_cols;
 			   corner_rows = my_struct.corner_rows;
-			   corners_ize_cols = my_struct.corners_ize_cols;
-			   corners_ize_rows = my_struct.corners_ize_rows;
+			   cornersize_cols = my_struct.cornersize_cols;
+			   cornersize_rows = my_struct.cornersize_rows;
 		    }
 	    };
 
@@ -59,11 +59,9 @@ class cm_xyf
 			return image_points_seq_;
 		}
 
-		void ComputeImageCrossPoints(vector<cv::Point2f> one_image_point, Eigen::Vector4f light_points)
-		{
+		void ComputeImageCrossPoints(vector<cv::Point2f> one_image_point, Eigen::Vector4f light_points, std::vector<cv::Point2f>& cross_points);
 
-		}
-
+		void SelectThreeNeigborPoints(vector<cv::Point2f> one_image_point, std::vector<cv::Point2f>& cross_points, std::vector<CorssPointGroup>& cross_points_group);
 		// ComputeImageCrossPoints(image_points_seq_[0], light_points);
 
 		void ComputeAllImageCorssPoints();

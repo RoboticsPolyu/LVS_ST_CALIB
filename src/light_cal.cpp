@@ -12,8 +12,8 @@ namespace calibration
 		// cm_data.fold_path = "";
 		// cm_data.corner_rows = 8;
 		// cm_data.corner_cols = 6;
-		// cm_data.corners_ize_cols = 35;
-		// cm_data.corners_ize_rows = 35;
+		// cm_data.cornersize_cols = 35;
+		// cm_data.cornersize_rows = 35;
 
 		// cm_xyf cm_instance(cm_data);
 		// output_data = cm_instance.getcmdata();
@@ -55,7 +55,7 @@ namespace calibration
 		// Eigen::Vector3f Xp_2 =  temp_mat*p_2;
 
 		// //length of lines
-		// float len_chessborad = cm_data.corners_ize_cols;
+		// float len_chessborad = cm_data.cornersize_cols;
 		// float len_ap_1 = (Xa_1 - Xp_1).norm();
 		// float len_bc_1 = (Xb_1 - Xc_1).norm();
 		// float len_ac_1 = (Xa_1 - Xc_1).norm();

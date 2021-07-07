@@ -2,6 +2,53 @@
 
 namespace calibration
 {
+    void cm_xyf::ComputeImageCrossPoints(vector<cv::Point2f> one_image_point, Eigen::Vector4f light_points, std::vector<cv::Point2f>& cross_points)
+    {
+        int cols = cm_data_.corner_cols;
+        int rows = cm_data_.corner_rows;
+        std::vector<cv::Point2f> group_points_;
+        std::vector<cv::Vec4f> line;
+
+        for (int c = 0; c < cols; c++)
+        {
+            for (int r = 0; r < rows; r++)
+            {
+                cv::Point2f temp_point = one_image_point[r+rows*c];
+                group_points_.push_back(temp_point);
+            }
+            cv::Vec4f line_para;
+            cv::fitLine(group_points_,line_para,cv::DIST_L2, 0, 1e-2, 1e-2);
+            line.push_back(line_para);
+            group_points_.clear();
+        };
+        //printf("corners",line);
+        for (int c_1 = 0;c_1 < cols; c_1++)
+        {
+            cv::Vec4f line_data = line[c_1];
+            float x_b = line_data[0];
+            float y_b = line_data[1];
+            float k_b = line_data[4]/line_data[3];
+            float b_b = y_b - k_b * x_b;
+//***get line linformation
+//***caculate the cross point
+            float x_l = 530; //light_points[0]
+            float y_l = 530;
+            float k_l = 4;
+            float b_l = y_l - k_l * x_l;           
+
+            // TODO CHECK k_l - k_b == 0
+            float x_c = (b_b - b_l)/(k_l - k_b);
+            float y_c = x_c * k_b + b_b;
+            cv::Point2f cross_point (x_c , y_c);
+            cross_points.push_back(cross_point);
+        }
+    }
+
+    void cm_xyf::SelectThreeNeigborPoints(vector<cv::Point2f> one_image_point, std::vector<cv::Point2f>& cross_points, std::vector<CorssPointGroup>& cross_points_group)
+    {
+
+    }
+
     cm_xyf::output cm_xyf::getcmdata(void)
     {
         output cm_output;
@@ -53,7 +100,7 @@ namespace calibration
             cv::imshow("drawed corner" +std::to_string(i), src_img);
 
             cv::imwrite(cm_data_.fold_path+"/drawed_corner/"+std::to_string(i) + ".bmp", src_img);
-            cv::Size square_size = cv::Size(cm_data_.corners_ize_rows, cm_data_.corners_ize_cols);
+            cv::Size square_size = cv::Size(cm_data_.cornersize_rows, cm_data_.cornersize_cols);
 
             vector<cv::Point3f> realPoint;
             for (int i = 0; i < cm_data_.corner_cols; i++) {
