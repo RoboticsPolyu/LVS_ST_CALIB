@@ -12,9 +12,8 @@ class abb_egm_wrapper_app
 
         bool TestTrajectory()
         {
-
         }
-        
+
     private:
         std::shared_ptr<abb_robot::EgmTrajectoryWrapper> egm_trajectory_ptr_;
 };
