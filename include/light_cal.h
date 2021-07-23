@@ -14,7 +14,7 @@ namespace calibration
             typedef struct lt_output
             {
                 Eigen::Vector3f pc_1;
-                Eigen::Vector3f pc_2;
+                //Eigen::Vector3f pc_2;
                 //Eigen::Vector3f pc_3;   
                 
             }lt_output;
