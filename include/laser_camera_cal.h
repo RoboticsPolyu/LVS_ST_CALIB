@@ -72,7 +72,7 @@ class LaserCameraCal
 
 		std::vector<vector<cv::Point2f>> GetImageCorners()
 		{
-			return image_points_seq_;
+			return image_corners_seq_;
 		}
 
 		std::vector<vector<cv::Point3f>> GetBoardCorners()
@@ -87,7 +87,7 @@ class LaserCameraCal
 
 		void ComputeAllImageCorssPoints();
 
-		void Get3dPoints(int index, struct output cm_output, std::vector<vector<cv::Point3f>> object_points_, std::vector<cv::Point2f>& points_group, 
+		void Get3dPoints(int index, struct output cm_output, std::vector<cv::Point2f>& points_group, 
 			std::vector<cv::Point2f>& useful_crosspoints, std::vector<Eigen::Vector3f>& cc_points, vector<cv::Point3f>& b_cbpoint);
 
 		void ResizeImage(cv::Mat& imagesrc, cv::Mat& imagedst);
@@ -98,10 +98,12 @@ class LaserCameraCal
 
 		output getcmdata(void);
 
+		void ComputeLaserPoint(int idx, float u, float v, float& z_c, float& x_c, float& y_c);
+
    	private:
 		struct Parameters cm_data_;
 		vector<cv::Point2f> corners_;
-		vector<vector<cv::Point2f>> image_points_seq_;
+		vector<vector<cv::Point2f>> image_corners_seq_;
 		vector<vector<cv::Point3f>> object_points_;
 		std::vector<std::vector<CorssPointGroup> > cross_points_;
 
@@ -113,6 +115,7 @@ class LaserCameraCal
 		vector<cv::Mat> image_undistorts_;
 		// LineFinder line_finder_;
 		vector<cv::Vec4f> light_vecs_;
+		Eigen::Matrix3f camera_matrix_;
 };
 
 }

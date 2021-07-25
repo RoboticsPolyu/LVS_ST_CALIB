@@ -37,13 +37,13 @@ namespace calibration
                 light_cal.distCoeffs = light_cal_.distCoeffs;
                 light_cal.points = light_cal_.points;
 
-                image_points_seq_.assign(image_points_seq.begin(), image_points_seq.end());
+                image_corners_seq_.assign(image_points_seq.begin(), image_points_seq.end());
             }
         
             lt_output getltdata(void);
 
         private:
             lt_input light_cal_;
-            vector<vector<cv::Point2f>> image_points_seq_;
+            vector<vector<cv::Point2f>> image_corners_seq_;
     };
 }

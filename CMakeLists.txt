@@ -114,3 +114,6 @@ set_target_properties(abb_wrapper_lib PROPERTIES
 
 add_executable(structure_calibration_test app/structure_calibration_test.cpp)
 target_link_libraries(structure_calibration_test laser_camera_cal)
+
+add_executable(new_slc_calibration app/new_slc_calibration.cpp)
+target_link_libraries(new_slc_calibration laser_camera_cal)

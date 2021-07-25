@@ -7,7 +7,6 @@ namespace calibration
         int cols = cm_data_.corner_cols;
         int rows = cm_data_.corner_rows;
         
-        std::cout << "cols: " << cols << " ,rows: " << rows << std::endl; 
         std::vector<cv::Point2f> group_points_;
         std::vector<cv::Vec4f> line;
 
@@ -19,12 +18,12 @@ namespace calibration
                 group_points_.push_back(temp_point);
             }
             cv::Vec4f line_para;
-            cv::fitLine(group_points_,line_para,cv::DIST_L2, 0, 1e-2, 1e-2);
+            cv::fitLine(group_points_, line_para, cv::DIST_L2, 0, 1e-2, 1e-2);
             line.push_back(line_para);
             group_points_.clear();
         };
-        //printf("corners",line);
-        for (int c_1 = 0;c_1 < cols; c_1++)
+
+        for (int c_1 = 0; c_1 < cols; c_1++)
         {
             cv::Vec4f line_data = line[c_1];
             float x_b = line_data[2];
@@ -44,11 +43,10 @@ namespace calibration
           
             cross_points.push_back(cross_point);
         }            
-        //cout << "cross_points" << std::fixed << cross_points << endl;
-
     }
 
-    void LaserCameraCal::SelectThreeNeigborPoints(vector<cv::Point2f> one_image_pxpoint, vector<cv::Point3f> one_image_cbpoint, std::vector<cv::Point2f>& cross_points, std::vector<cv::Point2f>& points_group, std::vector<cv::Point2f>& useful_crosspoints, vector<cv::Point3f>& b_cbpoint)
+    void LaserCameraCal::SelectThreeNeigborPoints(vector<cv::Point2f> one_image_pxpoint, vector<cv::Point3f> one_image_cbpoint, 
+        std::vector<cv::Point2f>& cross_points, std::vector<cv::Point2f>& points_group, std::vector<cv::Point2f>& useful_crosspoints, vector<cv::Point3f>& b_cbpoint)
     {
         int cols = cm_data_.corner_cols;
         int rows = cm_data_.corner_rows;
@@ -84,7 +82,6 @@ namespace calibration
                     points_group.push_back(cols_points_px[c-1]);
                     points_group.push_back(cols_points_px[c-2]);
                 }
-            
             }
 
             cols_points_cb.clear();
@@ -93,21 +90,33 @@ namespace calibration
 
     }
 
-    void LaserCameraCal::Get3dPoints(int index, struct output cm_output,std::vector<vector<cv::Point3f>> object_points_, std::vector<cv::Point2f>& points_group, std::vector<cv::Point2f>& useful_crosspoints, std::vector<Eigen::Vector3f>& cc_points, vector<cv::Point3f>& b_cbpoint)
+    /**
+     * index: image rot and translation's idx
+     * cm_output: internal matrix, rot nad t matrix
+     * 
+     * b_cbpoint: calibration board point 
+     */
+    void LaserCameraCal::Get3dPoints(int index, struct output cm_output, std::vector<cv::Point2f>& points_group, 
+        std::vector<cv::Point2f>& useful_crosspoints, std::vector<Eigen::Vector3f>& cc_points, vector<cv::Point3f>& b_cbpoint)
     {
         int count = useful_crosspoints.size();
         for (int i = 0; i < count; i++)
         {
-            std::cout << "*************************** Get3dPoints index " << i << " **********************************" << std::endl;
-
-            Eigen::Vector3f a_1 (points_group[i].x , points_group[i].y , 0);
-            Eigen::Vector3f b_1 (points_group[i+1].x , points_group[i+1].y , 0);
-            Eigen::Vector3f c_1 (points_group[i+2].x , points_group[i+2].y , 0);
-            Eigen::Vector3f p_1 (useful_crosspoints[i].x , useful_crosspoints[i].y , 0);
-            Eigen::Vector3f B_1 (b_cbpoint[i].x, b_cbpoint[i].y, b_cbpoint[i].z);
-
-            // std::cout << "cm_output.cam" << cm_output.cameraMatrix << endl;
+            // Compute cross point's real position at board coordinate
+            Eigen::Vector3f a_1(points_group[i].x , points_group[i].y , 0);
+            Eigen::Vector3f b_1(points_group[i+1].x , points_group[i+1].y , 0);
+            Eigen::Vector3f c_1(points_group[i+2].x , points_group[i+2].y , 0);
             
+            std::cout << "a_1: " << a_1 << std::endl;
+            std::cout << "b_1: " << b_1 << std::endl;
+            std::cout << "c_1: " << c_1 << std::endl;
+
+            Eigen::Vector3f p_1(useful_crosspoints[i].x , useful_crosspoints[i].y , 0);
+            Eigen::Vector3f B_1(b_cbpoint[i].x, b_cbpoint[i].y, b_cbpoint[i].z);
+
+            std::cout << "p_1: " << p_1 << std::endl;
+            std::cout << "B_1: " << B_1 << std::endl;
+
             Eigen::Matrix3f internal_matrix;
             cv::cv2eigen(cm_output.cameraMatrix, internal_matrix);
 
@@ -126,34 +135,26 @@ namespace calibration
             float len_ac_1 = (Xa_1 - Xc_1).norm();
             float len_bp_1 = (Xb_1 - Xp_1).norm();
             
-            float len_Xbp_1 = (((2*len_ap_1 * len_bc_1) / (len_ac_1 * len_bp_1) -1 ) /1 ) * len_chessborad;
+            float len_Xbp_1 = (((2.0*len_ap_1 * len_bc_1) / (len_ac_1 * len_bp_1) -1.0 ) /1.0 ) * len_chessborad;
 
-            Eigen::Vector4f pw_1(B_1[0], B_1[1]+len_Xbp_1, 0, 1);
+            Eigen::Vector4f pw_1(B_1[0], B_1[1] + len_Xbp_1, 0, 1);
 
-            // std::cout << "pw_1" << pw_1 << endl;
-    
+            std::cout << "len_Xbp_1: " << len_Xbp_1 << std::endl;
+            std::cout << "pw_1: " << pw_1[0] << " " << pw_1[1] << std::endl;
+
+            // Transform board point from board's coordinate to camera's coordinate
             cv::Mat temp_mat_1;
             cv::Mat temp_mat_2 = (cv::Mat_<double>(1, 4) << 0,0,0,1);
 
-            std::cout << "temp_mat_2" << temp_mat_2 << endl;
-
             cv::Mat res_mat;
             Rodrigues(cm_output.rvecsMat[index], res_mat);
-            // std::cout << "!!!!! res_mat !!!!!!! " << res_mat << std::endl;
-            std::cout << "!!!!! cm_output.tvecsMat[index] !!!!!!! " << cm_output.tvecsMat[index] << std::endl;
-
             cv::hconcat(res_mat, cm_output.tvecsMat[index], temp_mat_1);
-
-            std::cout << "!!!!! temp_mat_1 !!!!!!! " << temp_mat_1 << std::endl;
-
-
             cv::Mat M_cw_temp;
             cv::vconcat(temp_mat_1, temp_mat_2, M_cw_temp);
             Eigen::Matrix4f M_cw;
             cv::cv2eigen(M_cw_temp, M_cw);
             std::cout << "Debug !!!!!!!!!! M_cw !!!!!!!!!!!" << M_cw << std::endl;
 
-            //position of point p in camera coordinate
             Eigen::Vector4f temp_pc_1 = M_cw*pw_1;
 
             Eigen::Vector3f pc_1 = temp_pc_1.head(3);
@@ -204,7 +205,7 @@ namespace calibration
             // cv::cornerSubPix(src_img, corners_, cv::Size(11, 11), cv::Size(-1, -1),
             // cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 30, 0.01));
 
-            image_points_seq_.push_back(corners_);
+            image_corners_seq_.push_back(corners_);
             cv::drawChessboardCorners(src_img , corner_size , corners_ , patternfound);
 
             std::cout << "drawed_corner" << cm_data_.fold_path+"/drawed_corner/"+ std::to_string(i) << std::endl;
@@ -228,18 +229,18 @@ namespace calibration
             object_points_.push_back(realPoint);
             // printf("#objectPoints %ld\n", sizeof(object_points_[0]));
             // std::cout << object_points_[0] << endl;
-            // printf("#image_points %ld\n", sizeof(image_points_seq_[0]));
+            // printf("#image_points %ld\n", sizeof(image_corners_seq_[0]));
             // cout << corners_ << endl;
         }
 
         //TODO: check save style
         //**save objectpointdata in .yaml
         cv::FileStorage temp_file1("object_points.yaml" ,cv::FileStorage::WRITE);
-        temp_file1 << "image_points_seq_" << image_points_seq_;
+        temp_file1 << "image_corners_seq_" << image_corners_seq_;
         temp_file1 << "object_points" << object_points_;
         temp_file1.release();
         
-        cv::calibrateCamera(object_points_, image_points_seq_ , src_img.size() , cameraMatrix , distCoeffs , rvecsMat_ , tvecsMat_);
+        cv::calibrateCamera(object_points_, image_corners_seq_ , src_img.size() , cameraMatrix , distCoeffs , rvecsMat_ , tvecsMat_);
 
         cv::Mat Knew_ = cameraMatrix.clone();
         // Mat tmp = getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imagesize, 1, imagesize, 0);
@@ -273,9 +274,39 @@ namespace calibration
         cm_output.rvecsMat = rvecsMat_;
         cm_output.cameraMatrix = cameraMatrix;
         cm_output.distCoeffs = distCoeffs;
-    
+
+        cv::cv2eigen(cameraMatrix, camera_matrix_);
+
         return cm_output;
-        
+    }
+
+    void LaserCameraCal::ComputeLaserPoint(int idx, float u, float v, float& z_c, float& x_c, float& y_c)
+    {
+        // pattern board own normal vector
+        Eigen::Vector3f pb_normal_identity(0, 0, 1);
+
+        // compute pattern board normal vector at camera coordinate
+        Eigen::Vector3f pb_normal_c;
+        Eigen::Matrix3f rot;
+        Eigen::Vector3f t; // px py pz
+        cv::Mat res_mat;
+        Rodrigues(rvecsMat_[idx], res_mat);
+        cv::cv2eigen(res_mat, rot);
+        cv::cv2eigen(tvecsMat_[idx], t);
+        pb_normal_c = rot* pb_normal_identity + t; // ax ay az
+
+        float ax = pb_normal_c(0);
+        float ay = pb_normal_c(1);
+        float az = pb_normal_c(2);
+
+        // compute (u,v) ---> (x_c, y_c, z_c)
+        float ap = pb_normal_c.dot(t);
+        float u_u0_kx = (u - camera_matrix_(0,2))/ camera_matrix_(0,0);
+        float v_v0_ky = (v - camera_matrix_(1,2))/ camera_matrix_(1,1);
+
+        z_c = ap / (u_u0_kx* ax + v_v0_ky* ay + az);
+        x_c = z_c* u_u0_kx;
+        y_c = z_c* v_v0_ky;
     }
 
     void LaserCameraCal::DetectLine(cv::Mat imagesrc)
