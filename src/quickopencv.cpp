@@ -488,15 +488,23 @@ using namespace std;
 			0, 
 			0.01, 0.01); 
 
-		cv::Scalar color1 = cv::Scalar(255, 255, 255);
+		cv::Scalar color1 = cv::Scalar(0, 0, 255);
 
-		int x0 = line[2]; // start point
-		int y0 = line[3];
-		int x1 = x0 + 1500 * line[0]; // end point
-		int y1 = y0 + 1500 * line[1]; 
+		// int x0 = line[2]; // start point
+		// int y0 = line[3];
+		// int x1 = x0 + 1500 * line[0]; // end point
+		// int y1 = y0 + 1500 * line[1]; 
+        float laser_line_k = line(1) / line(0);
+        float laser_line_b = line(3) - line(2)* laser_line_k;
 
-		cv::line(fittingline, cv::Point(x0, y0), cv::Point(x1, y1),
-			color1); 
+        float u_0 = 0;
+        float v_0 = laser_line_k* 0 + laser_line_b;
+        float u_1 = 2000; 
+        float v_1 = laser_line_k* 2000 + laser_line_b;
+
+		std::cout << "u_0, v_0: " << u_0 << " , " << v_0 << "u_1, v_1： " << u_1 << " , " << v_1 << std::endl;
+		cv::line(fittingline, cv::Point(u_0, v_0), cv::Point(u_1, v_1), Scalar(0, 255, 255),
+			3);
 	}
 
     void MYRESIZE(cv::Mat& imagesrc, cv::Mat& imagedst)
@@ -519,7 +527,7 @@ using namespace std;
 		cv::threshold(image, thresholded, n,         
 			255,                                     
 			cv::THRESH_BINARY);                          
-
+		cv::Mat image_drawed = image;
 		image = thresholded;
 
 		setMinVote(60);
@@ -529,8 +537,9 @@ using namespace std;
 		Mat fittingline;
 		fittingline.create(image.size(), image.type());
 		fittingline = Scalar(0, 0, 255);
-		fitted_curve(fittingline, line);
-        MYRESIZE(fittingline, image_dst); 
+		fitted_curve(image_drawed, line);
+		std::cout << "quickopencv line: " << line << std::endl;
+        MYRESIZE(image_drawed, image_dst); 
         cv::namedWindow("drawed_line", 0.2);
         cv::imshow("drawed_line", image_dst);
         cv::waitKey(0);

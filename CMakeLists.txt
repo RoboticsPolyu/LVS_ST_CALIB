@@ -100,20 +100,23 @@ set_target_properties(abb_wrapper_lib PROPERTIES
     VERSION             ${abb_wrapper_version}
     SOVERSION           ${abb_wrapper_soversion})
 
-# add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
-# target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
+add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
+target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
 
-# add_executable(wheel_imu_pim app/test_wheel_imu_pim.cpp)
-# target_link_libraries(wheel_imu_pim gtsam wio_factor_lib)
+add_executable(wheel_imu_pim app/test_wheel_imu_pim.cpp)
+target_link_libraries(wheel_imu_pim gtsam wio_factor_lib)
 
-# add_executable(wheel_imu_error app/test_wheel_imu_error.cpp)
-# target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
+add_executable(wheel_imu_error app/test_wheel_imu_error.cpp)
+target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 
-# add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
-# target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
-
-add_executable(structure_calibration_test app/structure_calibration_test.cpp)
-target_link_libraries(structure_calibration_test laser_camera_cal)
+add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
+target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
 add_executable(new_slc_calibration app/new_slc_calibration.cpp)
 target_link_libraries(new_slc_calibration laser_camera_cal)
+
+add_executable(realtime_calibration_test app/realtime_calibration_test.cpp)
+target_link_libraries(realtime_calibration_test laser_camera_cal)
+
+add_executable(line_detector_calibration app/line_detector_calibration.cpp)
+target_link_libraries(line_detector_calibration laser_camera_cal)
