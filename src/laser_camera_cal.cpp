@@ -2,9 +2,8 @@
 
 namespace calibration
 {
-    LaserCameraCal::output LaserCameraCal::MultiImageCalibrate(void)
+    void LaserCameraCal::MultiImageCalibrate(void)
     {
-        output cm_output;
         std::vector<cv::String> filenames;
 
         cv::glob(parameter_.fold_path, filenames); 
@@ -21,7 +20,7 @@ namespace calibration
         if(filenames.size() == 0)
         {
             std::cout << "File names size: " << filenames.size() << std::endl;
-            return cm_output;
+            return;
         }
 
         for(size_t i = 0; i < filenames.size(); ++i)
@@ -84,17 +83,12 @@ namespace calibration
 
         std::cout << "#CameraMatrix:\n" << cameraMatrix << endl;
         std::cout << "#DistCoeffs:\n" << distCoeffs << endl;
-        
-        cm_output.tvecsMat = tvecsMat_;
-        cm_output.rvecsMat = rvecsMat_;
-        cm_output.cameraMatrix = cameraMatrix;
-        cm_output.distCoeffs = distCoeffs;
 
         camera_matrix_ = cameraMatrix;
         dist_coeffs_ = distCoeffs;
 
         cv::cv2eigen(cameraMatrix, camera_eigen_matrix_);
-        return cm_output;
+        return;
     }
 
     void LaserCameraCal::ComputeLaserPoint(int idx, float u, float v, float& z_c, float& x_c, float& y_c)

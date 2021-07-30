@@ -1,5 +1,5 @@
-#ifndef __XYF_CAL_LIB_H__
-#define __XYF_CAL_LIB_H__
+#ifndef __LASER_CAMERA_CAL_H__
+#define __LASER_CAMERA_CAL_H__
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -7,7 +7,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 
-#include "quickopencv.h"
+#include "laser_line_detector.h"
 
 using namespace std;
 
@@ -51,14 +51,6 @@ class LaserCameraCal
 		    }
 	    };
 
-	   	struct output
-	   	{
-		   vector<cv::Mat> tvecsMat;
-		   vector<cv::Mat> rvecsMat;
-		   cv::Mat cameraMatrix;
-		   cv::Mat distCoeffs;
-	   	};
-
 	   	LaserCameraCal() = delete;
 		
 		LaserCameraCal(Parameters parameter)
@@ -87,7 +79,7 @@ class LaserCameraCal
 
 		bool DetectLine();
 
-		output MultiImageCalibrate(void);
+		void MultiImageCalibrate(void);
 
 		void ComputeLaserPoint(int idx, float u, float v, float& z_c, float& x_c, float& y_c);
 
@@ -100,10 +92,12 @@ class LaserCameraCal
 
 		/**
 		 * p_a p_b p_c ; plane paramters
+		 * p_a*x + p_b*y + p_c = z
 		 *  u, v : laser point
 		 *  x_c, y_c, z_c: 3d position at camera coordinate 
 		 */
 		void ComputeLaserPoint(float p_a, float p_b, float p_c, float u, float v, float x_c, float y_c, float z_c);
+		
    	private:
 		struct Parameters parameter_;
 		vector<vector<cv::Point2f>> image_corners_seq_;
@@ -124,4 +118,4 @@ class LaserCameraCal
 
 }
 
-#endif // __XYF_CAL_LIB_H__ 
+#endif // __LASER_CAMERA_CAL_H__ 
