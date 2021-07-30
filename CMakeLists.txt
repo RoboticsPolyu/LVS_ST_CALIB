@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(calib)
+project(wcq_lib)
 
 option(BUILD_SHARED_LIBS "Build shared gtsam library, instead of static" ON)
 
@@ -54,6 +54,15 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(GTSAM REQUIRED)
 include_directories(${GTSAM_INCLUDE_DIR})
 
+# ros
+find_package(catkin REQUIRED COMPONENTS roscpp)
+catkin_package(
+  CATKIN_DEPENDS roscpp
+)
+include_directories(
+ ${catkin_INCLUDE_DIRS}
+)
+
 # include
 include_directories(include)
 
@@ -89,7 +98,7 @@ set_target_properties(laser_camera_cal PROPERTIES
     SOVERSION           1.0)
 
 set(ABB_SOURCE
-    src/abb_egm_wrapper)
+    src/abb_egm_wrapper.cpp)
 
 add_library(abb_wrapper_lib ${ABB_SOURCE})
 target_include_directories(abb_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})
@@ -115,8 +124,12 @@ target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 add_executable(slc_calibration app/slc_calibration.cpp)
 target_link_libraries(slc_calibration laser_camera_cal)
 
-add_executable(realtime_calibration_test app/realtime_calibration_test.cpp)
-target_link_libraries(realtime_calibration_test laser_camera_cal)
-
 add_executable(laser_line_detector app/laser_line_detector.cpp)
 target_link_libraries(laser_line_detector laser_camera_cal)
+add_executable(abb_egm_wrapper_controler app/test_abb_egm_controler.cpp)
+add_dependencies(abb_egm_wrapper_controler ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARIES})
+
+add_executable(abb_egm_wrapper_trajectory app/test_abb_egm_trajectory.cpp)
+add_dependencies(abb_egm_wrapper_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(abb_egm_wrapper_trajectory abb_wrapper_lib ${catkin_LIBRARIES})
