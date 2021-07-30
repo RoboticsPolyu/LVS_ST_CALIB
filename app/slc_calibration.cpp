@@ -11,10 +11,11 @@ int main(void)
     parameters.line_image_path = "/home/yang/image_fold/light_fold";
     parameters.corner_rows = 8; //8
     parameters.corner_cols = 5; //5
-    parameters.cornersize_rows = 6.85;
-    parameters.cornersize_cols = 6.85;
-    parameters.len_chessborad =  6.85; //6.85
-
+    parameters.cornersize_rows = 7.23;
+    parameters.cornersize_cols = 7.23;
+    parameters.len_chessborad =  7.23; //7.23
+    parameters.camera_model = calibration::CAMERA_MODEL::PINHOLE;
+    
   	calibration::LaserCameraCal LaserCameraCal_instance(parameters);
 
     calibration::LaserCameraCal::output cameramat = LaserCameraCal_instance.MultiImageCalibrate();

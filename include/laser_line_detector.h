@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __QUICK_OPENCV_H__
+#define __QUICK_OPENCV_H__
+
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
@@ -11,23 +13,17 @@ using namespace std;
 
 class LineFinder {
 private:
-	// cv::Mat img;
-
 	std::vector<cv::Vec4i> lines;
-
 	std::vector<cv::Vec4i> line1;
-
 	std::vector<cv::Vec4i> lastline;
 	std::vector<cv::Vec4i> linesmid;
 
 	double deltaRho;
 	double deltaTheta;
-
 	int minVote;
-
 	double minLength;
-
 	double maxGap;
+	
 public:
 
 	LineFinder() : deltaRho(1), deltaTheta(PI / 180),
@@ -71,3 +67,5 @@ public:
     // two line cross point
 	void final(Mat image);
 };
+
+#endif

@@ -77,7 +77,7 @@ set_target_properties(wio_factor_lib PROPERTIES
 
 set(XYF_CALIBRATION_SOURCE
     src/laser_camera_cal.cpp
-    src/quickopencv.cpp)
+    src/laser_line_detector.cpp)
 
 add_library(laser_camera_cal ${XYF_CALIBRATION_SOURCE})
 target_include_directories(laser_camera_cal PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})
@@ -112,11 +112,11 @@ target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
 target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
-add_executable(new_slc_calibration app/new_slc_calibration.cpp)
-target_link_libraries(new_slc_calibration laser_camera_cal)
+add_executable(slc_calibration app/slc_calibration.cpp)
+target_link_libraries(slc_calibration laser_camera_cal)
 
 add_executable(realtime_calibration_test app/realtime_calibration_test.cpp)
 target_link_libraries(realtime_calibration_test laser_camera_cal)
 
-add_executable(line_detector_calibration app/line_detector_calibration.cpp)
-target_link_libraries(line_detector_calibration laser_camera_cal)
+add_executable(laser_line_detector app/laser_line_detector.cpp)
+target_link_libraries(laser_line_detector laser_camera_cal)

@@ -18,6 +18,12 @@ using namespace std;
 namespace calibration
 {
 
+enum CAMERA_MODEL: uint8_t
+{
+	FISHEYE = 0,
+	PINHOLE,
+};
+
 class LaserCameraCal
 {
 	public:
@@ -30,6 +36,7 @@ class LaserCameraCal
 		    string fold_path;
 			string line_image_path;
 			float len_chessborad;
+			uint8_t camera_model;
 
 			void operator()(const Parameters & my_struct)
 		    {
@@ -40,6 +47,7 @@ class LaserCameraCal
 			   cornersize_rows = my_struct.cornersize_rows;
 			   line_image_path = my_struct.line_image_path;
 			   len_chessborad = my_struct.len_chessborad;
+			   camera_model = my_struct.camera_model;
 		    }
 	    };
 
@@ -111,6 +119,7 @@ class LaserCameraCal
 		cv::Mat           camera_matrix_;
 
 		int image_size_;
+		uint8_t camera_model_;
 };
 
 }

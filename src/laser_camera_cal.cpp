@@ -128,20 +128,14 @@ namespace calibration
     
     void LaserCameraCal::UndistortPoints(const std::vector<cv::Point2f>& in, std::vector<cv::Point2f> &out) const
     {
-        // if(!IsDistorted())
-        // {
-        // out = in;
-        // return;
-        // }
-
-        // if (model_ == CameraModel::Value::FISHEYE)
-        // {
-        // cv::fisheye::undistortPoints(in, out, K_, D_, cv::Matx33d::eye(), Knew_);
-        // }
-        // else
-        // {
+        if (camera_model_ == CAMERA_MODEL::FISHEYE)
+        {
+            cv::fisheye::undistortPoints(in, out, camera_matrix_, dist_coeffs_, cv::Matx33d::eye(), camera_matrix_);
+        }
+        else
+        {
             cv::undistortPoints(in, out, camera_matrix_, dist_coeffs_, cv::Matx33d::eye(), camera_matrix_);
-        // }
+        }
     }
 
     void LaserCameraCal::DetectLine(cv::Mat imagesrc)
