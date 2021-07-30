@@ -109,6 +109,19 @@ set_target_properties(abb_wrapper_lib PROPERTIES
     VERSION             ${abb_wrapper_version}
     SOVERSION           ${abb_wrapper_soversion})
 
+set(SENSORS_SOURCE
+    src/daheng_camera_wrapper.cpp)
+add_library(sensors_wrapper_lib ${SENSORS_SOURCE})
+target_include_directories(sensors_wrapper_lib PUBLIC })
+target_link_libraries(sensors_wrapper_lib PUBLIC gxiapi pthread ${OpenCV_LIBS})
+
+set_target_properties(sensors_wrapper_lib PROPERTIES
+    OUTPUT_NAME         sensors_wrapper_lib
+    CLEAN_DIRECT_OUTPUT 1
+    VERSION             ${abb_wrapper_version}
+    SOVERSION           ${abb_wrapper_soversion}
+)
+
 add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
 target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
 
@@ -133,3 +146,5 @@ target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARI
 add_executable(abb_egm_wrapper_trajectory app/test_abb_egm_trajectory.cpp)
 add_dependencies(abb_egm_wrapper_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(abb_egm_wrapper_trajectory abb_wrapper_lib ${catkin_LIBRARIES})
+add_executable(daheng_camera app/test_daheng_camera.cpp)
+target_link_libraries(daheng_camera sensors_wrapper_lib)
