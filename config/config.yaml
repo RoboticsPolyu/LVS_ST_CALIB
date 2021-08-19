@@ -1,0 +1,8 @@
+corner_rows: 7
+corner_cols: 10
+cornersize_rows: 3
+cornersize_cols: 3
+fold_path: "/home/yang/Desktop/calib2"
+line_image_path: "/home/yang/Desktop/calib2/light_fold"
+intrinsic_file: "../config/intrinsic.yaml"
+camera_model: 1

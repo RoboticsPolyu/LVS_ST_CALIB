@@ -22,11 +22,14 @@ int main(void)
     };
 
     uint64_t t_last;
-    cv::namedWindow("daheng_camera");
+    cv::namedWindow("daheng_camera", cv::WINDOW_NORMAL);
+
     while(true)
     {
         daheng_camera.GetImg(camera_data);
+        
         cv::imshow("daheng_camera", camera_data.img);
+        cv::waitKey(1);
 
         std::cout << "get one image " << std::endl;
         // cv::imwrite("daheng_camera_test.jpg", camera_data.img);

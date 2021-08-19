@@ -9,18 +9,8 @@ int main(void)
     ofstream pattern_3d_point_fs;
     pattern_3d_point_fs.open("pattern_3dpoint.txt");
 
-    calibration::LaserCameraCal::Parameters parameters;
-    parameters.corner_rows = 8;
-    parameters.corner_cols = 5;
-    parameters.cornersize_rows = 7.23;
-    parameters.cornersize_cols = 7.23;
-    parameters.len_chessborad =  7.23; //7.23
-    parameters.camera_model = calibration::CAMERA_MODEL::PINHOLE;
-    parameters.fold_path = "/home/yang/image_fold";
-    parameters.line_image_path = "/home/yang/image_fold/light_fold";
-
-  	calibration::LaserCameraCal LaserCameraCal_instance(parameters);
-
+  	calibration::LaserCameraCal LaserCameraCal_instance;
+    LaserCameraCal_instance.LoadParameter("../config/slc_config.yaml");
     LaserCameraCal_instance.MultiImageCalibrate();
 
     cv::FileStorage laser_line_file("detect_line.yaml" ,cv::FileStorage::READ);
@@ -54,11 +44,11 @@ int main(void)
             point_uv.push_back(point_uv_j);
         }
 
-        LaserCameraCal_instance.UndistortPoints(point_uv, point_uv_distorted);
+        // LaserCameraCal_instance.UndistortPoints(point_uv, point_uv_distorted);
 
-        for(int j = 0; j< point_uv_distorted.size(); j++)
+        for(int j = 0; j< point_uv.size(); j++)
         {
-            cv::Point2f point_distorted = point_uv_distorted[j];
+            cv::Point2f point_distorted = point_uv[j];
             LaserCameraCal_instance.ComputeLaserPoint(i, point_distorted.x, point_distorted.y, z_c, x_c, y_c);
             pattern_3d_point_fs << x_c << " " << y_c << " " << z_c << std::endl;
             Eigen::Vector3f uv_xyz(x_c, y_c, z_c);

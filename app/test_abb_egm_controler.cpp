@@ -36,15 +36,17 @@ class abb_egm_wrapper_app
             }
 
                 // Compute references for position (along X-axis), and orientation (around Y-axis).
-            double position_reference = initail_control_point_.value[0] + position_amplitude_*(1.0 + std::sin(2.0*M_PI*frequency_*time - 0.5*M_PI));
-            double orientation_reference = initail_control_point_.value[5] + orientation_amplitude_*(1.0 + std::sin(2.0*M_PI*frequency_*time - 0.5*M_PI));
+            double position_reference = initail_control_point_.value[2] + position_amplitude_*(1.0 + std::sin(2.0*M_PI*frequency_*time - 0.5*M_PI));
+            double orientation_reference = initail_control_point_.value[5]; // + orientation_amplitude_*(1.0 + std::sin(2.0*M_PI*frequency_*time - 0.5*M_PI));
 
             std::cout <<  "next pos_x " << position_reference << " [mm] | " << "y orientation = " << orientation_reference << " [deg]" << std::endl;
 
+            next_control_point_ = initail_control_point_;
+            
             next_control_point_.value[0] = position_reference;
             next_control_point_.value[5] = orientation_reference;
 
-            egm_controler_ptr_->SetNextCtrlPoint(next_control_point_);
+            egm_controler_ptr_->SetNextCtrlPoint(initail_control_point_);
 
         }
 

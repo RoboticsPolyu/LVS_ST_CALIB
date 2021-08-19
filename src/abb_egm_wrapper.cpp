@@ -2,6 +2,8 @@
 #include <abb_egm_wrapper.h>
 #include <abb_exception.h>
 
+#include <ros/ros.h>
+
 namespace abb_robot
 {
     EgmBaseWrapper::EgmBaseWrapper()
@@ -50,6 +52,7 @@ namespace abb_robot
             sleep(0.5);
         }
 
+        std::cout << "start egm controler thread " << std::endl;
         abb_egm_controler_thread_ = std::shared_ptr<std::thread >(new std::thread(std::bind(&EgmControlerWrapper::Start, this)));
     }
     

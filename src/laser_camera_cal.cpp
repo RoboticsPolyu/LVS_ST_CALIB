@@ -2,6 +2,31 @@
 
 namespace calibration
 {
+    bool LaserCameraCal::LoadParameter(const std::string& filename)
+    {
+        YAML::Node config = YAML::LoadFile(filename);
+        int corner_rows = config["corner_rows"].as<int>();
+        int corner_cols = config["corner_cols"].as<int>();
+        float cornersize_rows = config["cornersize_rows"].as<float>();
+        float cornersize_cols = config["cornersize_cols"].as<float>();
+        std::string fold_path = config["fold_path"].as<std::string>();
+        std::string line_image_path = config["line_image_path"].as<std::string>();
+        std::string intrinsic_file = config["intrinsic_file"].as<std::string>();
+        uint8_t camera_model = config["camera_model"].as<uint8_t>();
+
+        parameter_.corner_rows = corner_rows;
+        parameter_.corner_cols = corner_cols;
+        parameter_.cornersize_cols = cornersize_cols;
+        parameter_.cornersize_rows = cornersize_rows;
+        parameter_.fold_path = fold_path;
+        parameter_.line_image_path = line_image_path;
+        parameter_.intrinsic_file = intrinsic_file;
+        parameter_.camera_model = camera_model;
+
+        parameter_.print();
+        return true;
+    }
+
     void LaserCameraCal::MultiImageCalibrate(void)
     {
         std::vector<cv::String> filenames;
@@ -26,47 +51,48 @@ namespace calibration
         for(size_t i = 0; i < filenames.size(); ++i)
         {
             std::cout<< "File name: " << filenames[i] << std::endl;
-            src_img = cv::imread(filenames[i]);
+            src_img = cv::imread(filenames[i], IMREAD_GRAYSCALE);
             src_imgs.push_back(src_img);
 
             if(!src_img.data)
                 std::cerr << "Problem loading image!!!" << std::endl;
         
             image_size = src_img.size();
-            cv::Size corner_size = cv::Size(parameter_.corner_rows, parameter_.corner_cols);
-            int patternfound = cv::findChessboardCorners(src_img, corner_size, corners, cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE);
+            cv::Size corner_size = cv::Size(parameter_.corner_cols, parameter_.corner_rows);
+            int patternfound = cv::findChessboardCorners(src_img, corner_size, corners, cv::CALIB_CB_ADAPTIVE_THRESH);
             
             std::cout << "This image corner size: " << corners.size() << endl;
-            // cv::find4QuadCornerSubpix(src_img, corners, cv::Size(5, 5));
-            // cv::cornerSubPix(src_img, corners, cv::Size(11, 11), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 30, 0.01));
+
+            float64_t tag_width_in_pixel = cv::norm(corners[0] - corners[1]);
+            int32_t win_width = tag_width_in_pixel / 32.0 >= 2.0 ? (int32_t)(tag_width_in_pixel / 32.0) : 2;
+            cv::TermCriteria criteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 40, 0.01);
+            cv::Size win_size(win_width, win_width);
+            cv::cornerSubPix(src_img, corners, win_size, cv::Size(-1, -1), criteria);
+
+            // std::cout << "************************************************" <<std::endl;
+            // std::cout << "corners: " << corners << std::endl;
+            // std::cout << "************************************************" <<std::endl;
 
             image_corners_seq_.push_back(corners);
             cv::drawChessboardCorners(src_img , corner_size , corners , patternfound);
-
             std::cout << "Drawed_corner" << parameter_.fold_path+"/drawed_corner/"+ std::to_string(i) << std::endl;
-
             cv::imwrite(parameter_.fold_path+"/drawed_corner/drawed_"+std::to_string(i) + ".bmp", src_img);
-            cv::Size square_size = cv::Size(parameter_.cornersize_rows, parameter_.cornersize_cols);
 
             vector<cv::Point3f> realPoint;
-            for (int i = 0; i < parameter_.corner_cols; i++) {
-                for (int j = 0; j < parameter_.corner_rows; j++) {
+            for (int i = 0; i < parameter_.corner_rows; i++) {
+                for (int j = 0; j < parameter_.corner_cols; j++) {
                     cv::Point3f tempPoint;
-                    tempPoint.x = i * square_size.width;
-                    tempPoint.y = j * square_size.height;
+                    tempPoint.x = i * parameter_.cornersize_rows;
+                    tempPoint.y = j * parameter_.cornersize_cols;
                     tempPoint.z = 0;
                     realPoint.push_back(tempPoint);
                 }
             }
+            
             object_points_.push_back(realPoint);
         }
 
-        cv::FileStorage temp_file1("object_points.yaml" ,cv::FileStorage::WRITE);
-        temp_file1 << "image_corners_seq_" << image_corners_seq_;
         image_size_ = image_corners_seq_.size();
-
-        temp_file1 << "object_points" << object_points_;
-        temp_file1.release();
         
         cv::calibrateCamera(object_points_, image_corners_seq_ , src_img.size() , cameraMatrix , distCoeffs , rvecsMat_ , tvecsMat_);
 
@@ -84,10 +110,13 @@ namespace calibration
         std::cout << "#CameraMatrix:\n" << cameraMatrix << endl;
         std::cout << "#DistCoeffs:\n" << distCoeffs << endl;
 
-        camera_matrix_ = cameraMatrix;
         dist_coeffs_ = distCoeffs;
 
         cv::cv2eigen(cameraMatrix, camera_eigen_matrix_);
+
+        std::vector<float> errors;
+        float64_t rms = ComputeReprojectionErrors(object_points_, image_corners_seq_, rvecsMat_, tvecsMat_, cameraMatrix, distCoeffs, errors,false);
+        std::cout << "#Calibration RMS: " << rms << std::endl;
         return;
     }
 
@@ -122,13 +151,16 @@ namespace calibration
     
     void LaserCameraCal::UndistortPoints(const std::vector<cv::Point2f>& in, std::vector<cv::Point2f> &out) const
     {
-        if (camera_model_ == CAMERA_MODEL::FISHEYE)
+        cv::Mat camera_matrix;
+        cv::eigen2cv(camera_eigen_matrix_, camera_matrix);
+
+        if (parameter_.camera_model == CAMERA_MODEL::FISHEYE)
         {
-            cv::fisheye::undistortPoints(in, out, camera_matrix_, dist_coeffs_, cv::Matx33d::eye(), camera_matrix_);
+            cv::fisheye::undistortPoints(in, out, camera_matrix, dist_coeffs_, cv::Matx33d::eye(), camera_matrix);
         }
         else
         {
-            cv::undistortPoints(in, out, camera_matrix_, dist_coeffs_, cv::Matx33d::eye(), camera_matrix_);
+            cv::undistortPoints(in, out, camera_matrix, dist_coeffs_, cv::Matx33d::eye(), camera_matrix);
         }
     }
 
@@ -148,6 +180,7 @@ namespace calibration
     {
         std::vector<cv::String> filenames; // notice here that we are using the Opencv's embedded "String" class
         cv::Mat src_img;
+        cv::Mat image_undistort;
 
         cv::glob(parameter_.line_image_path, filenames); // new function that does the job ;-)
 
@@ -157,17 +190,20 @@ namespace calibration
             return 1;
         }
 
-        for(int i = 0; i < filenames.size(); ++i)
+        for(uint32_t i = 0; i < filenames.size(); ++i)
         {
             std::cout<< "Laser file name: " << filenames[i] << std::endl;
             src_img = cv::imread(filenames[i], IMREAD_GRAYSCALE);
             if(!src_img.data)
                 std::cerr << "Problem loading image!!!" << std::endl;
+            cv::Mat camera_matrix;
+            cv::eigen2cv(camera_eigen_matrix_, camera_matrix);
+            undistort(src_img, image_undistort , camera_matrix , dist_coeffs_);
 
-            DetectLine(src_img);
+            DetectLine(image_undistort);
         }
         cv::FileStorage temp_file1("detect_line.yaml" ,cv::FileStorage::WRITE);
-        for(int i = 0; i < light_vecs_.size(); i++)
+        for(uint32_t i = 0; i < light_vecs_.size(); i++)
         {
             temp_file1 << "line_vec4f_" + std::to_string(i) << light_vecs_[i];
         }
@@ -195,4 +231,55 @@ namespace calibration
         x_c = z_c* (u - u0)/ kx;
         y_c = z_c* (v - v0)/ ky;
     }
-}
+
+    bool LaserCameraCal::LoadCameraMatrix(Eigen::Matrix3f& camera_matrix)
+    {
+        YAML::Node config = YAML::LoadFile(parameter_.intrinsic_file);
+        float fx = config["fx"].as<float>();
+        float fy = config["fy"].as<float>();
+        float u0 = config["u0"].as<float>();
+        float v0 = config["v0"].as<float>();
+        
+        camera_matrix(0, 0) = fx;
+        camera_matrix(1, 1) = fy;
+        camera_matrix(0, 2) = u0;
+        camera_matrix(1, 2) = v0;
+
+        std::cout << "*Load Camera Matrix: " << std::endl;
+        std::cout << camera_matrix << std::endl;
+    }
+
+    bool LaserCameraCal::SaveCameraMatrix(const Eigen::Matrix3f& camera_matrix)
+    {
+    }
+ 
+    double LaserCameraCal::ComputeReprojectionErrors( const vector<vector<Point3f> >& objectPoints,
+                                                const vector<vector<Point2f> >& imagePoints,
+                                                const vector<Mat>& rvecs, const vector<Mat>& tvecs,
+                                                const Mat& cameraMatrix , const Mat& distCoeffs,
+                                                vector<float>& perViewErrors, bool fisheye)
+    {
+        vector<Point2f> imagePoints2;
+        size_t totalPoints = 0;
+        double totalErr = 0, err;
+        perViewErrors.resize(objectPoints.size());
+        for(size_t i = 0; i < objectPoints.size(); ++i )
+        {
+            if (fisheye)
+            {
+                fisheye::projectPoints(objectPoints[i], imagePoints2, rvecs[i], tvecs[i], cameraMatrix,
+                distCoeffs);
+            }
+            else
+            {
+                projectPoints(objectPoints[i], rvecs[i], tvecs[i], cameraMatrix, distCoeffs, imagePoints2);
+            }
+            err = norm(imagePoints[i], imagePoints2, NORM_L2);
+            size_t n = objectPoints[i].size();
+            perViewErrors[i] = (float) std::sqrt(err*err/n);
+            totalErr += err*err;
+            totalPoints += n;
+        }
+        return std::sqrt(totalErr/totalPoints);
+    }
+} 

@@ -6,7 +6,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <yaml-cpp/yaml.h>
 
+#include "types.h"
 #include "laser_line_detector.h"
 
 using namespace std;
@@ -31,11 +33,11 @@ class LaserCameraCal
 	    {
 		    int corner_rows;
 		    int corner_cols;
-		    int cornersize_rows;
-		    int cornersize_cols;
+		    float cornersize_rows;
+		    float cornersize_cols;
 		    string fold_path;
 			string line_image_path;
-			float len_chessborad;
+			string intrinsic_file;
 			uint8_t camera_model;
 
 			void operator()(const Parameters & my_struct)
@@ -46,12 +48,29 @@ class LaserCameraCal
 			   cornersize_cols = my_struct.cornersize_cols;
 			   cornersize_rows = my_struct.cornersize_rows;
 			   line_image_path = my_struct.line_image_path;
-			   len_chessborad = my_struct.len_chessborad;
 			   camera_model = my_struct.camera_model;
+			   intrinsic_file = my_struct.intrinsic_file;
 		    }
+
+			void print()
+			{
+				std::cout << "**********************************************" << std::endl;
+				std::cout << "Laser Camera Calibration Parameter: " << std::endl;
+				std::cout << "corner_cols: " << corner_cols << std::endl;
+				std::cout << "corner_rows: " << corner_rows << std::endl;
+				std::cout << "cornersize_cols: " << cornersize_cols << std::endl;
+				std::cout << "cornersize_rows: " << cornersize_rows << std::endl;
+				std::cout << "fold_path: " << fold_path << std::endl;
+				std::cout << "line_image_path: " << line_image_path << std::endl;
+				std::cout << "camera_mode: " << (uint32_t)camera_model << std::endl;
+				std::cout << "intrinsic file: " << intrinsic_file << std::endl;
+				std::cout << "**********************************************" << std::endl;
+			}
 	    };
 
-	   	LaserCameraCal() = delete;
+	   	LaserCameraCal()
+		{
+		}
 		
 		LaserCameraCal(Parameters parameter)
 	    {
@@ -72,6 +91,8 @@ class LaserCameraCal
 		{
 			return parameter_;
 		};
+
+		bool LoadParameter(const std::string& filename);
 
 		void ResizeImage(cv::Mat& imagesrc, cv::Mat& imagedst);
 
@@ -98,6 +119,12 @@ class LaserCameraCal
 		 */
 		void ComputeLaserPoint(float p_a, float p_b, float p_c, float u, float v, float x_c, float y_c, float z_c);
 		
+		double ComputeReprojectionErrors( const vector<vector<Point3f> >& objectPoints,
+												const vector<vector<Point2f> >& imagePoints,
+												const vector<Mat>& rvecs, const vector<Mat>& tvecs,
+												const Mat& cameraMatrix , const Mat& distCoeffs,
+												vector<float>& perViewErrors, bool fisheye);
+
    	private:
 		struct Parameters parameter_;
 		vector<vector<cv::Point2f>> image_corners_seq_;
@@ -109,11 +136,14 @@ class LaserCameraCal
 		// LineFinder line_finder_;
 		vector<cv::Vec4f> light_vecs_;
 		Eigen::Matrix3f   camera_eigen_matrix_;
+		Eigen::VectorXf   dist_eigen_coeffs_;
 		cv::Mat 		  dist_coeffs_;
-		cv::Mat           camera_matrix_;
 
 		int image_size_;
-		uint8_t camera_model_;
+
+		bool LoadCameraMatrix(Eigen::Matrix3f& camera_matrix);
+
+		bool SaveCameraMatrix(const Eigen::Matrix3f& camera_matrix);
 };
 
 }

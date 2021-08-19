@@ -2,27 +2,19 @@
 
 int main(void)
 {
-    // calibration::LaserCameraCal::Parameters parameters;
-    // ofstream pattern_3d_point_fs;
-    // pattern_3d_point_fs.open("pattern_3dpoint.txt");
+    calibration::LaserCameraCal::Parameters parameters;
+    parameters.corner_rows = 5;
+    parameters.corner_cols = 8;
+    parameters.cornersize_rows = 7.23;
+    parameters.cornersize_cols = 7.23;
+    parameters.camera_model = calibration::CAMERA_MODEL::PINHOLE;
+    parameters.fold_path = "/home/yang/Dataset/image_fold3";
+    parameters.line_image_path = "/home/yang/Dataset/image_fold3/light_fold";
+    parameters.intrinsic_file = "../config/config.yaml";
 
-    // /* internal paramater calibration*/
-    // parameters.fold_path = "/home/yang/image_fold";
-    // parameters.line_image_path = "/home/yang/image_fold/light_fold";
-    // parameters.corner_rows = 9;
-    // parameters.corner_cols = 6;
-    // parameters.cornersize_rows = 6.85;
-    // parameters.cornersize_cols = 6.85;
-    // parameters.len_chessborad =  6.85;
-
-  	// calibration::LaserCameraCal LaserCameraCal_instance(parameters);
-    // LaserCameraCal_instance.DetectLine();
-
-    LineFinder line_finder;
-
-    cv::Mat input = cv::imread("/home/yang/image_fold/double_line/1.bmp", IMREAD_GRAYSCALE);
-    line_finder.final(input);
-    cv::waitKey(0);
+  	calibration::LaserCameraCal LaserCameraCal_instance(parameters);
+    LaserCameraCal_instance.MultiImageCalibrate();
+    LaserCameraCal_instance.DetectLine();
 
     return 0;
 }

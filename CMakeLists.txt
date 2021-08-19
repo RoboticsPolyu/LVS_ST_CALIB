@@ -42,7 +42,7 @@ include_directories(${EIGEN_INCLUDE_DIR})
 # opencv
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
-
+message("opencv include :" ${OpenCV_INCLUDE_DIRS})
 # # glog
 # find_package(Glog REQUIRED)
 # include_directories(${GLOG_INCLUDE_DIRS})
@@ -53,6 +53,10 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # gtsam
 find_package(GTSAM REQUIRED)
 include_directories(${GTSAM_INCLUDE_DIR})
+
+# yaml-cpp
+find_package(yaml-cpp REQUIRED)
+include_directories(${YAML_CPP_INCLUDE_DIR})
 
 # ros
 find_package(catkin REQUIRED COMPONENTS roscpp)
@@ -90,13 +94,15 @@ set(XYF_CALIBRATION_SOURCE
 
 add_library(laser_camera_cal ${XYF_CALIBRATION_SOURCE})
 target_include_directories(laser_camera_cal PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})
-target_link_libraries(laser_camera_cal PUBLIC ${OpenCV_LIBS})
+target_link_libraries(laser_camera_cal PUBLIC ${OpenCV_LIBS}  yaml-cpp)
 set_target_properties(laser_camera_cal PROPERTIES
     OUTPUT_NAME         laser_camera_cal
     CLEAN_DIRECT_OUTPUT 1
     VERSION             1.0
     SOVERSION           1.0)
 
+
+message("opencvlib" ${OpenCV_LIBS})
 set(ABB_SOURCE
     src/abb_egm_wrapper.cpp)
 
@@ -139,6 +145,10 @@ target_link_libraries(slc_calibration laser_camera_cal)
 
 add_executable(laser_line_detector app/laser_line_detector.cpp)
 target_link_libraries(laser_line_detector laser_camera_cal)
+
+add_executable(camera_calibration app/camera_calibration.cpp)
+target_link_libraries(camera_calibration laser_camera_cal)
+
 add_executable(abb_egm_wrapper_controler app/test_abb_egm_controler.cpp)
 add_dependencies(abb_egm_wrapper_controler ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARIES})
@@ -146,5 +156,7 @@ target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARI
 add_executable(abb_egm_wrapper_trajectory app/test_abb_egm_trajectory.cpp)
 add_dependencies(abb_egm_wrapper_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(abb_egm_wrapper_trajectory abb_wrapper_lib ${catkin_LIBRARIES})
+
 add_executable(daheng_camera app/test_daheng_camera.cpp)
 target_link_libraries(daheng_camera sensors_wrapper_lib)
+

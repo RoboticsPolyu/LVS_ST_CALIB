@@ -9,8 +9,6 @@
 #include <abb_libegm/egm_controller_interface.h>
 #include <abb_libegm/egm_trajectory_interface.h>
 
-#include <ros/ros.h>
-
 namespace abb_robot
 {
     class EgmBaseWrapper
