@@ -10,11 +10,10 @@ int main(void)
     parameters.camera_model = calibration::CAMERA_MODEL::PINHOLE;
     parameters.fold_path = "/home/yang/Dataset/image_fold3";
     parameters.line_image_path = "/home/yang/Dataset/image_fold3/light_fold";
-    parameters.intrinsic_file = "../config/config.yaml";
 
-  	calibration::LaserCameraCal LaserCameraCal_instance(parameters);
-    LaserCameraCal_instance.MultiImageCalibrate();
-    LaserCameraCal_instance.DetectLine();
+  	calibration::LaserCameraCal laser_camera_calib(parameters);
+    laser_camera_calib.MultiImageCalibration();
+    laser_camera_calib.LaserLineDetector();
 
     return 0;
 }

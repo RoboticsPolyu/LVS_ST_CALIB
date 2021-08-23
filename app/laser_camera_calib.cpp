@@ -9,33 +9,33 @@ int main(void)
     ofstream pattern_3d_point_fs;
     pattern_3d_point_fs.open("pattern_3dpoint.txt");
 
-  	calibration::LaserCameraCal LaserCameraCal_instance;
-    LaserCameraCal_instance.LoadParameter("../config/slc_config.yaml");
-    LaserCameraCal_instance.MultiImageCalibrate();
+  	calibration::LaserCameraCal laser_camera_calib;
+    laser_camera_calib.LoadParameter("../config/slc_config.yaml");
+    laser_camera_calib.MultiImageCalibration();
 
     cv::FileStorage laser_line_file("detect_line.yaml" ,cv::FileStorage::READ);
     Eigen::Vector4f light_points;
-    int valid_image_size = LaserCameraCal_instance.GetValidImageSize();
-
+    int valid_image_size = laser_camera_calib.GetValidImageSize();
+    laser_camera_calib.LaserLineDetector();
+    
     std::vector<Eigen::Vector3f> lt_3dpoint_all_plane;
+    std::vector<calibration::LaserCameraCal::StraightLine> straight_lines;
+    laser_camera_calib.GetLaserLines(straight_lines);
+    assert(valid_image_size == straight_lines.size());
+
     for(int i = 0; i < valid_image_size; i++)
     {
         std::cout << "------------------------------------- image index: " << i << "-----------------------" << std::endl;
-        cv::Vec4f vec4f ;
-        laser_line_file["line_vec4f_" + std::to_string(i)] >> vec4f;
-        std::cout << "light_points: " << vec4f << std::endl;
-        cv::cv2eigen(vec4f, light_points);
-        
+
         std::vector<Eigen::Vector3f> lt_3dpoint;
         float x_c, y_c, z_c;
         uint uv_step = 5;
-        float laser_line_k = light_points(1) / light_points(0);
-        float laser_line_b = light_points(3) - light_points(2)* laser_line_k;
+        float laser_line_k = straight_lines[i].k;
+        float laser_line_b = straight_lines[i].b;
 
         std::cout << "laser_k: " << laser_line_k << " ,laser_b: " << laser_line_b << std::endl;
 
         std::vector<cv::Point2f> point_uv, point_uv_distorted;
-
         for(int j = 0; j < 2000; j = j+5)
         {
             float u_j = j;
@@ -44,12 +44,12 @@ int main(void)
             point_uv.push_back(point_uv_j);
         }
 
-        // LaserCameraCal_instance.UndistortPoints(point_uv, point_uv_distorted);
+        // laser_camera_calib.UndistortPoints(point_uv, point_uv_distorted);
 
         for(int j = 0; j< point_uv.size(); j++)
         {
             cv::Point2f point_distorted = point_uv[j];
-            LaserCameraCal_instance.ComputeLaserPoint(i, point_distorted.x, point_distorted.y, z_c, x_c, y_c);
+            laser_camera_calib.ComputeLaserPoint(i, point_distorted.x, point_distorted.y, z_c, x_c, y_c);
             pattern_3d_point_fs << x_c << " " << y_c << " " << z_c << std::endl;
             Eigen::Vector3f uv_xyz(x_c, y_c, z_c);
             lt_3dpoint_all_plane.push_back(uv_xyz);

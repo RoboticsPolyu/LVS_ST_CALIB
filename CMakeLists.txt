@@ -5,8 +5,6 @@ option(BUILD_SHARED_LIBS "Build shared gtsam library, instead of static" ON)
 
 set(wio_factor_version 1.0)
 set(wio_factor_soversion 1.0)
-set(abb_wrapper_version 1.0)
-set(abb_wrapper_soversion 1.0)
 
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE)
@@ -31,9 +29,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -DNDEBUG -Wno-reorder -O2" CACHE
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "/usr/local/cmake/lib/cmake")
 
-# abb libegm
-find_package(abb_libegm)
-
+#############################################################################################
 # third party libs
 # eigen
 find_package(Eigen REQUIRED)
@@ -43,33 +39,34 @@ include_directories(${EIGEN_INCLUDE_DIR})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 message("opencv include :" ${OpenCV_INCLUDE_DIRS})
-# # glog
-# find_package(Glog REQUIRED)
-# include_directories(${GLOG_INCLUDE_DIRS})
 
+find_package(Protobuf REQUIRED)
+find_package(Threads REQUIRED)
 # # tbb
 # find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
-# gtsam
+# # gtsam
 find_package(GTSAM REQUIRED)
 include_directories(${GTSAM_INCLUDE_DIR})
 
-# yaml-cpp
+# # yaml-cpp
 find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
-# ros
-find_package(catkin REQUIRED COMPONENTS roscpp)
-catkin_package(
-  CATKIN_DEPENDS roscpp
-)
-include_directories(
- ${catkin_INCLUDE_DIRS}
-)
+# # ros
+# find_package(catkin REQUIRED COMPONENTS roscpp)
+# catkin_package(
+#   CATKIN_DEPENDS roscpp
+# )
+# include_directories(
+#  ${catkin_INCLUDE_DIRS}
+# )
 
 # include
 include_directories(include)
 
+#############################################################################################
+# Wheel IMU Calibration
 set(WIO_SOURCE
     src/wio_factor.cpp
     src/wio_integration.cpp)
@@ -88,9 +85,34 @@ set_target_properties(wio_factor_lib PROPERTIES
     VERSION             ${wio_factor_version}
     SOVERSION           ${wio_factor_soversion})
 
+###########################################################################################
+# ABB EGM LIBRARIE
+message("PROTOBUF INCLUDES: " ${PROTOBUF_INCLUDE_DIRS})
+set(ABB_EGM_SOURCE
+    src/egm/egm_control.cpp
+    include/egm/egm.pb.cc)
+add_library(abb_egm_lib ${ABB_EGM_SOURCE})
+target_include_directories(abb_egm_lib PUBLIC
+    ${GTSAM_INCLUDE_DIR} 
+    ${EIGEN_INCLUDE_DIR} 
+    ${PROTOBUF_INCLUDE_DIRS})
+target_link_libraries(abb_egm_lib PUBLIC 
+    yaml-cpp   
+    Boost::regex
+    Boost::system
+    Boost::thread
+    ${PROTOBUF_LIBRARIES}
+    Threads::Threads)
+set_target_properties(abb_egm_lib PROPERTIES
+        OUTPUT_NAME         abb_egm_lib
+        CLEAN_DIRECT_OUTPUT 1
+        VERSION             1.0
+        SOVERSION           1.0)
+
+#############################################################################################
+# Laser Camera Sensor Calibration 
 set(XYF_CALIBRATION_SOURCE
-    src/laser_camera_cal.cpp
-    src/laser_line_detector.cpp)
+    src/laser_camera_cal.cpp)
 
 add_library(laser_camera_cal ${XYF_CALIBRATION_SOURCE})
 target_include_directories(laser_camera_cal PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})
@@ -100,21 +122,9 @@ set_target_properties(laser_camera_cal PROPERTIES
     CLEAN_DIRECT_OUTPUT 1
     VERSION             1.0
     SOVERSION           1.0)
-
-
-message("opencvlib" ${OpenCV_LIBS})
-set(ABB_SOURCE
-    src/abb_egm_wrapper.cpp)
-
-add_library(abb_wrapper_lib ${ABB_SOURCE})
-target_include_directories(abb_wrapper_lib PUBLIC ${GTSAM_INCLUDE_DIR})
-target_link_libraries(abb_wrapper_lib PUBLIC gtsam gtsam_unstable ${abb_libegm_LIBRARIES})
-set_target_properties(abb_wrapper_lib PROPERTIES
-    OUTPUT_NAME         abb_wrapper_lib
-    CLEAN_DIRECT_OUTPUT 1
-    VERSION             ${abb_wrapper_version}
-    SOVERSION           ${abb_wrapper_soversion})
-
+ 
+#############################################################################################
+# Daheng Camera
 set(SENSORS_SOURCE
     src/daheng_camera_wrapper.cpp)
 add_library(sensors_wrapper_lib ${SENSORS_SOURCE})
@@ -128,6 +138,9 @@ set_target_properties(sensors_wrapper_lib PROPERTIES
     SOVERSION           ${abb_wrapper_soversion}
 )
 
+#############################################################################################
+# Test App
+
 add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
 target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
 
@@ -140,23 +153,19 @@ target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
 target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
-add_executable(slc_calibration app/slc_calibration.cpp)
-target_link_libraries(slc_calibration laser_camera_cal)
-
-add_executable(laser_line_detector app/laser_line_detector.cpp)
-target_link_libraries(laser_line_detector laser_camera_cal)
+add_executable(laser_camera_calib app/laser_camera_calib.cpp)
+target_link_libraries(laser_camera_calib laser_camera_cal)
 
 add_executable(camera_calibration app/camera_calibration.cpp)
 target_link_libraries(camera_calibration laser_camera_cal)
 
-add_executable(abb_egm_wrapper_controler app/test_abb_egm_controler.cpp)
-add_dependencies(abb_egm_wrapper_controler ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(abb_egm_wrapper_controler abb_wrapper_lib ${catkin_LIBRARIES})
-
-add_executable(abb_egm_wrapper_trajectory app/test_abb_egm_trajectory.cpp)
-add_dependencies(abb_egm_wrapper_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(abb_egm_wrapper_trajectory abb_wrapper_lib ${catkin_LIBRARIES})
+add_executable(laser_line_detector app/laser_line_detector.cpp)
+target_link_libraries(laser_line_detector laser_camera_cal)
 
 add_executable(daheng_camera app/test_daheng_camera.cpp)
 target_link_libraries(daheng_camera sensors_wrapper_lib)
 
+add_executable(abb_egm_example app/abb_egm_example.cpp)
+target_link_libraries(abb_egm_example abb_egm_lib)
+
+#############################################################################################

@@ -6,10 +6,10 @@
 
 int main(void)
 {
-   calibration::LaserCameraCal LaserCameraCal_instance;
+   calibration::LaserCameraCal laser_camera_calib;
      
-   LaserCameraCal_instance.LoadParameter("../config/config.yaml");
-   LaserCameraCal_instance.MultiImageCalibrate();
+   laser_camera_calib.LoadParameter("../config/slc_config.yaml");
+   laser_camera_calib.MultiImageCalibration();
 
    return 0;
 }

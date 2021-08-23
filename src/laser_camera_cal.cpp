@@ -11,8 +11,8 @@ namespace calibration
         float cornersize_cols = config["cornersize_cols"].as<float>();
         std::string fold_path = config["fold_path"].as<std::string>();
         std::string line_image_path = config["line_image_path"].as<std::string>();
-        std::string intrinsic_file = config["intrinsic_file"].as<std::string>();
         uint8_t camera_model = config["camera_model"].as<uint8_t>();
+        bool use_intrinsic = config["use_intrinsic"].as<bool>();
 
         parameter_.corner_rows = corner_rows;
         parameter_.corner_cols = corner_cols;
@@ -20,21 +20,49 @@ namespace calibration
         parameter_.cornersize_rows = cornersize_rows;
         parameter_.fold_path = fold_path;
         parameter_.line_image_path = line_image_path;
-        parameter_.intrinsic_file = intrinsic_file;
         parameter_.camera_model = camera_model;
-
+        parameter_.use_intrinsic = use_intrinsic;
         parameter_.print();
+
+        float fx = config["fx"].as<float>();
+        float fy = config["fy"].as<float>();
+        float u0 = config["u0"].as<float>();
+        float v0 = config["v0"].as<float>();
+        
+        camera_eigen_matrix_(0, 0) = fx;
+        camera_eigen_matrix_(1, 1) = fy;
+        camera_eigen_matrix_(0, 2) = u0;
+        camera_eigen_matrix_(1, 2) = v0;
+        camera_eigen_matrix_(2, 2) = 1;
+
+        k1_ = config["k1"].as<float>();
+        k2_ = config["k2"].as<float>();
+        k3_ = config["k3"].as<float>();
+        p1_ = config["p1"].as<float>();
+        p2_ = config["p2"].as<float>();
+
+        std::cout << "********************************************" << std::endl;
+        std::cout << " -- Load Camera Matrix: " << std::endl;
+        std::cout << camera_eigen_matrix_ << std::endl;
+        std::cout << " -- Load Distortion Matrix: " << std::endl;
+        std::cout <<  "k1: " << k1_ << std::endl;
+        std::cout <<  "k2: " << k2_ << std::endl;
+        std::cout <<  "k3: " << k3_ << std::endl;
+        std::cout <<  "p1: " << p1_ << std::endl;
+        std::cout <<  "p2: " << p2_ << std::endl;
+        std::cout << "********************************************" << std::endl;
+
         return true;
     }
 
-    void LaserCameraCal::MultiImageCalibrate(void)
+    void LaserCameraCal::MultiImageCalibration(void)
     {
         std::vector<cv::String> filenames;
 
         cv::glob(parameter_.fold_path, filenames); 
         std::vector<cv::Mat> src_imgs;
         cv::Mat src_img;
-        cv::Mat cameraMatrix = cv::Mat(3, 3, CV_32FC1, cv::Scalar::all(0)); /* camera intrinsic mat */
+        cv::Mat cv_K  = cv::Mat(3, 3, CV_32FC1, cv::Scalar::all(0)); /* camera intrinsic mat */
         cv::Mat distCoeffs = cv::Mat(1, 5, CV_32FC1, cv::Scalar::all(0)); /* camera distortion data k1,k2,p1,p2,k3 */
         cv::Mat map1, map2;
         cv::Mat cv_R = cv::Mat::eye(3, 3, CV_32F);
@@ -51,7 +79,7 @@ namespace calibration
         for(size_t i = 0; i < filenames.size(); ++i)
         {
             std::cout<< "File name: " << filenames[i] << std::endl;
-            src_img = cv::imread(filenames[i], IMREAD_GRAYSCALE);
+            src_img = cv::imread(filenames[i], cv::IMREAD_GRAYSCALE);
             src_imgs.push_back(src_img);
 
             if(!src_img.data)
@@ -93,29 +121,47 @@ namespace calibration
         }
 
         image_size_ = image_corners_seq_.size();
-        
-        cv::calibrateCamera(object_points_, image_corners_seq_ , src_img.size() , cameraMatrix , distCoeffs , rvecsMat_ , tvecsMat_);
+        cv::eigen2cv(camera_eigen_matrix_, cv_K);
+        distCoeffs = (cv::Mat_<float>(1, 5) << k1_, k2_, p1_, p2_, k3_);
 
-        cv::Mat Knew_ = cameraMatrix.clone();
-        cv::initUndistortRectifyMap(cameraMatrix , distCoeffs , cv_R, Knew_, image_size , CV_16SC2, map1 , map2);
+        if(!parameter_.use_intrinsic)
+        {
+            cv::calibrateCamera(object_points_, image_corners_seq_ , src_img.size() , cv_K , distCoeffs , rvecsMat_ , tvecsMat_, cv::CALIB_ZERO_TANGENT_DIST);
+        }
+        else
+        {
+            for(size_t i = 0; i < filenames.size(); ++i)
+            {
+                std::vector<cv::Point2f> undistort_points;
+                std::vector<int32_t> inliers;
+                cv::Mat cv_rvec(3, 1, CV_64F), cv_tvec(3, 1, CV_64F);
+                cv::undistortPoints(image_corners_seq_[i], undistort_points, cv_K, distCoeffs, cv::Matx33d::eye(), cv_K);
+                cv::solvePnPRansac(object_points_[i], undistort_points, cv_K, cv::noArray(), cv_rvec, cv_tvec, false, 100, 8, 0.99, inliers, cv::SOLVEPNP_ITERATIVE);
+                std::cout << cv_rvec << std::endl;
+                std::cout << cv_tvec << std::endl;
+                tvecsMat_.push_back(cv_tvec);
+                rvecsMat_.push_back(cv_rvec);
+            }
+        }
         
         int image_index = 0;
+        
         for(auto it = src_imgs.begin(); it != src_imgs.end(); it++)
         {
-            undistort(*it, image_undistort , cameraMatrix , distCoeffs);
+            cv::undistort(*it, image_undistort , cv_K , distCoeffs);
             cv::imwrite(parameter_.fold_path + "/undistort/undistort_" + std::to_string(image_index) + ".bmp", image_undistort);
             image_index++;
         }
 
-        std::cout << "#CameraMatrix:\n" << cameraMatrix << endl;
+        std::cout << "#CameraMatrix:\n" << cv_K << endl;
         std::cout << "#DistCoeffs:\n" << distCoeffs << endl;
 
         dist_coeffs_ = distCoeffs;
 
-        cv::cv2eigen(cameraMatrix, camera_eigen_matrix_);
+        cv::cv2eigen(cv_K, camera_eigen_matrix_);
 
         std::vector<float> errors;
-        float64_t rms = ComputeReprojectionErrors(object_points_, image_corners_seq_, rvecsMat_, tvecsMat_, cameraMatrix, distCoeffs, errors,false);
+        float64_t rms = ComputeReprojectionErrors(object_points_, image_corners_seq_, rvecsMat_, tvecsMat_, cv_K, distCoeffs, errors,false);
         std::cout << "#Calibration RMS: " << rms << std::endl;
         return;
     }
@@ -164,61 +210,154 @@ namespace calibration
         }
     }
 
-    void LaserCameraCal::DetectLine(cv::Mat imagesrc)
-    {
-        
-        // line_finder.final(imagesrc);
-        cv::Vec4f vec4f;
-        LineFinder line_finder;
-
-        line_finder.finish(imagesrc, vec4f);
-        light_vecs_.push_back(vec4f);
-        std::cout << "This image's light vec4f is : " << vec4f << std::endl;
-    }
-
-    bool LaserCameraCal::DetectLine()
-    {
-        std::vector<cv::String> filenames; // notice here that we are using the Opencv's embedded "String" class
-        cv::Mat src_img;
-        cv::Mat image_undistort;
-
-        cv::glob(parameter_.line_image_path, filenames); // new function that does the job ;-)
-
-        if(filenames.size() == 0)
-        {
-            std::cout << "file names size: " << filenames.size() << std::endl;
-            return 1;
-        }
-
-        for(uint32_t i = 0; i < filenames.size(); ++i)
-        {
-            std::cout<< "Laser file name: " << filenames[i] << std::endl;
-            src_img = cv::imread(filenames[i], IMREAD_GRAYSCALE);
-            if(!src_img.data)
-                std::cerr << "Problem loading image!!!" << std::endl;
-            cv::Mat camera_matrix;
-            cv::eigen2cv(camera_eigen_matrix_, camera_matrix);
-            undistort(src_img, image_undistort , camera_matrix , dist_coeffs_);
-
-            DetectLine(image_undistort);
-        }
-        cv::FileStorage temp_file1("detect_line.yaml" ,cv::FileStorage::WRITE);
-        for(uint32_t i = 0; i < light_vecs_.size(); i++)
-        {
-            temp_file1 << "line_vec4f_" + std::to_string(i) << light_vecs_[i];
-        }
-        temp_file1.release();
-
-        std::cout << "DetectLine last Line " << std::endl;
-    }
-
     void LaserCameraCal::ResizeImage(cv::Mat& imagesrc, cv::Mat& imagedst)
 	{
-		double fScale = 0.2;//缩放系数
+		double fScale = 0.4;//缩放系数
 		//计算目标图像的大小
 		cv::Size dsize = cv::Size(imagesrc.cols*fScale, imagesrc.rows*fScale);
 		cv::resize(imagesrc, imagedst, dsize);
 	}
+
+    void LaserCameraCal::LaserLineDetector()
+    {
+        std::vector<cv::String> filenames;
+        cv::glob(parameter_.line_image_path, filenames); 
+        cv::Mat src_img, src_img_undistortion;
+        cv::Mat camera_matrix = cv::Mat::eye(3, 3, CV_32F);
+        cv::eigen2cv(camera_eigen_matrix_, camera_matrix);
+
+        if(filenames.size() == 0)
+        {
+            std::cout << "File names size: " << filenames.size() << std::endl;
+            return;
+        }
+
+        straight_lines_.clear();
+        for(size_t i = 0; i < filenames.size(); ++i)
+        {
+            std::cout<< "File name: " << filenames[i] << std::endl;
+            src_img = cv::imread(filenames[i], cv::IMREAD_GRAYSCALE);
+
+            if(!src_img.data)
+                std::cerr << "Problem loading image!!!" << std::endl;
+            
+            cv::undistort(src_img, src_img_undistortion, camera_matrix, dist_coeffs_);
+            
+            StraightLine straight_line;
+            if(LaserLineDetector(src_img, straight_line))
+            {
+                straight_lines_.push_back(straight_line);
+                // @TODO
+                // if image can't extract line or corners, You should keep right corresponsible relation.
+            }
+            
+        }
+    }
+
+    void drawLine(cv::Mat &img, std::vector<cv::Vec2f> lines,  double rows,   double cols, cv::Scalar scalar, int n)
+    {
+        cv::Point pt1, pt2;
+        for (size_t i = 0; i < lines.size(); i++)
+        {
+            float rho = lines[i][0];  //直线距离坐标原点的距离
+            float theta = lines[i][1];  //直线过坐标原点垂线与x轴夹角
+            double a = cos(theta);  //夹角的余弦值
+            double b = sin(theta);  //夹角的正弦值
+            double x0 = a*rho, y0 = b*rho;  //直线与过坐标原点的垂线的交点
+            double length = max(rows, cols);  //图像高宽的最大值
+                                            //计算直线上的一点
+            pt1.x = cvRound(x0 + length  * (-b));
+            pt1.y = cvRound(y0 + length  * (a));
+            //计算直线上另一点
+            pt2.x = cvRound(x0 - length  * (-b));
+            pt2.y = cvRound(y0 - length  * (a));
+            //两点绘制一条直线
+            line(img, pt1, pt2, scalar, n);
+        }
+    }
+
+    void LaserCameraCal::GetLaserLines(std::vector<StraightLine>& straight_lines)
+    {
+        straight_lines = straight_lines_;
+    }
+
+    bool LaserCameraCal::LaserLineDetector(cv::Mat& src_image, StraightLine& straight_line)
+    {
+	    cv::Mat edge;  
+	    cv::Mat image_dst;
+        
+        std::vector<cv::Vec4f> lines;
+        // ResizeImage(src_image, src_image); ///!!!!!!!!!!!!!!!!!
+        
+        std::cout << "threshold";
+        // Canny(src_image, edge, 230, 230, 3, false);
+	    cv::threshold(src_image, edge, 230.0, 255, cv::THRESH_BINARY);  
+        cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+        cv::morphologyEx(edge, image_dst, cv::MORPH_CLOSE, element);
+        std::vector<cv::Point> points;
+
+        for(uint i = 0; i < image_dst.cols; i++)
+        {
+            float sum_pix = 0, sum_cols_pix = 0;
+            for(uint j = 0; j < image_dst.rows; j++)
+            {
+                float pixel = image_dst.data[i + j* image_dst.cols];
+                sum_pix += pixel;
+                sum_cols_pix += pixel* j;
+            }
+            float ave_rows = 0;
+            ave_rows = sum_cols_pix / sum_pix;
+            
+            cv::circle(image_dst, cv::Point(i, ave_rows), 2, cv::Scalar(155));
+            points.push_back(cv::Point(i, ave_rows));
+        }
+        // cv::imshow("morph open", image_dst);
+        // cv::imwrite("morph_open.jpg", image_dst);
+        // cv::waitKey(0);
+
+        // //计算纹理和直线
+        // cv::Canny(edge, edge, 230, 230, 3, false);
+        // std::vector<cv::Vec2f> lines1, lines2;
+        // cv::HoughLines(edge, lines1, 1, CV_PI / 180, 100, 0, 0);
+        // cv::HoughLines(edge, lines2, 1, CV_PI / 180, 230, 0, 0);
+
+        // std::cout << "lines2 size: " << lines2.size() << std::endl;
+        
+        // //在原图像中绘制直线
+        // cv::Mat img1, img2;
+        // edge.copyTo(img1);
+        // edge.copyTo(img2);
+        // drawLine(img1, lines1, edge.rows, edge.cols, cv::Scalar(120), 2);
+        // drawLine(img2, lines2, edge.rows, edge.cols, cv::Scalar(120), 2);
+ 
+        // //显示图像
+        // cv::imshow("edge", edge);
+        // cv::imshow("img", src_image);
+        // cv::imshow("img1", img1);
+        // cv::imshow("img2", img2);
+        // cv::waitKey(0);
+
+        cv::Vec4f line;
+        cv::fitLine(points, line, cv::DIST_L2, 0, 0.01,0.01);
+
+        float laser_line_k = line(1) / line(0);
+        float laser_line_b = line(3) - line(2)* laser_line_k;
+        straight_line.k = laser_line_k;
+        straight_line.b = laser_line_b;
+
+        float u_0 = 0;
+        float v_0 = laser_line_k* 0 + laser_line_b;
+        float u_1 = 2000; 
+        float v_1 = laser_line_k* 2000 + laser_line_b;
+
+        std::cout << "Laser K: " << laser_line_k << " , Laser B: " << laser_line_b << std::endl;
+        cv::line(image_dst, cv::Point(u_0, v_0), cv::Point(u_1, v_1), cv::Scalar(55), 2);
+        ResizeImage(image_dst, image_dst);
+        cv::imshow("img", image_dst);
+        cv::waitKey(0);
+
+        return true;
+    }
 
     void LaserCameraCal::ComputeLaserPoint(float p_a, float p_b, float p_c, float u, float v, float x_c, float y_c, float z_c)
     {
@@ -232,34 +371,17 @@ namespace calibration
         y_c = z_c* (v - v0)/ ky;
     }
 
-    bool LaserCameraCal::LoadCameraMatrix(Eigen::Matrix3f& camera_matrix)
-    {
-        YAML::Node config = YAML::LoadFile(parameter_.intrinsic_file);
-        float fx = config["fx"].as<float>();
-        float fy = config["fy"].as<float>();
-        float u0 = config["u0"].as<float>();
-        float v0 = config["v0"].as<float>();
-        
-        camera_matrix(0, 0) = fx;
-        camera_matrix(1, 1) = fy;
-        camera_matrix(0, 2) = u0;
-        camera_matrix(1, 2) = v0;
-
-        std::cout << "*Load Camera Matrix: " << std::endl;
-        std::cout << camera_matrix << std::endl;
-    }
-
     bool LaserCameraCal::SaveCameraMatrix(const Eigen::Matrix3f& camera_matrix)
     {
     }
  
-    double LaserCameraCal::ComputeReprojectionErrors( const vector<vector<Point3f> >& objectPoints,
-                                                const vector<vector<Point2f> >& imagePoints,
-                                                const vector<Mat>& rvecs, const vector<Mat>& tvecs,
-                                                const Mat& cameraMatrix , const Mat& distCoeffs,
+    double LaserCameraCal::ComputeReprojectionErrors( const vector<vector<cv::Point3f> >& objectPoints,
+                                                const vector<vector<cv::Point2f> >& imagePoints,
+                                                const vector<cv::Mat>& rvecs, const vector<cv::Mat>& tvecs,
+                                                const cv::Mat& cv_K , const cv::Mat& distCoeffs,
                                                 vector<float>& perViewErrors, bool fisheye)
     {
-        vector<Point2f> imagePoints2;
+        vector<cv::Point2f> imagePoints2;
         size_t totalPoints = 0;
         double totalErr = 0, err;
         perViewErrors.resize(objectPoints.size());
@@ -267,14 +389,14 @@ namespace calibration
         {
             if (fisheye)
             {
-                fisheye::projectPoints(objectPoints[i], imagePoints2, rvecs[i], tvecs[i], cameraMatrix,
+                cv::fisheye::projectPoints(objectPoints[i], imagePoints2, rvecs[i], tvecs[i], cv_K,
                 distCoeffs);
             }
             else
             {
-                projectPoints(objectPoints[i], rvecs[i], tvecs[i], cameraMatrix, distCoeffs, imagePoints2);
+                projectPoints(objectPoints[i], rvecs[i], tvecs[i], cv_K, distCoeffs, imagePoints2);
             }
-            err = norm(imagePoints[i], imagePoints2, NORM_L2);
+            err = norm(imagePoints[i], imagePoints2, cv::NORM_L2);
             size_t n = objectPoints[i].size();
             perViewErrors[i] = (float) std::sqrt(err*err/n);
             totalErr += err*err;
