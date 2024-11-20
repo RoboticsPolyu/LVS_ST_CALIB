@@ -1,17 +1,75 @@
-corner_rows: 5
-corner_cols: 8
-cornersize_rows: 7.23
-cornersize_cols: 7.23
-fold_path: "/home/yang/Dataset/image_fold"
-line_image_path: "/home/yang/Dataset/image_fold/light_fold"
+corner_rows: 7
+corner_cols: 10
+cornersize_rows: 6
+cornersize_cols: 6
+#fold_path: "/home/yang/works/demo_Laser_welding1/build/dataset/20210915_LC/image"
+#line_image_path: "/home/yang/works/demo_Laser_welding1/build/dataset/20210915_LC/laser"
+
+#fold_path: "/home/yang/Desktop/demo_Laser_welding1_experiments/build/dataset/LC_0427/BOARD"
+#line_image_path: "/home/yang/Desktop/demo_Laser_welding1_experiments/build/dataset/LC_0427/L"
+
+
+fold_path: "/home/yangpeiwen/Documents/ypw/build-demo_Laser_welding1_experiments-Desktop_Qt_6_2_4_GCC_64bit-Debug/dataset/LC_220727/C"
+line_image_path: "/home/yangpeiwen/Documents/ypw/build-demo_Laser_welding1_experiments-Desktop_Qt_6_2_4_GCC_64bit-Debug/dataset/LC_220727/L"
+
+egm_path: "/home/yangpeiwen/Documents/ypw/build-demo_Laser_welding1_experiments-Desktop_Qt_6_2_4_GCC_64bit-Debug/datasetLC/data/egm_data.txt"
 camera_model: 1
-use_intrinsic: false
-fx: 3579.9265
-fy: 3578.2289
-u0: 1188.9616
-v0: 1028.0973
-k1: -0.2315
-k2: 0.2450
-k3: -0.5092
+use_intrinsic: true
+
+
+# 20220727_intrinsic
+fx: 3671.816149167293
+fy: 3673.054767823902
+u0: 1202.05292881891
+v0: 1012.724880485216
+k1: -0.2247568439561717
+k2: 0.1827051018453399
+k3: -0.4200880191381967
 p1: 0
 p2: 0
+
+# 20210914-15
+fx: 3597.8882
+fy: 3599.5422
+u0: 1211.2184
+v0: 1007.1196
+k1: -0.2307
+k2: 0.1734
+k3: -0.2950
+p1: 0
+p2: 0
+
+# fx: 3646.04597583021
+# fy: 3644.91001281215
+# u0: 1187.703000972475
+# v0: 1010.344502486683
+# k1: -0.2296342593526222
+# k2: 0.09881656731298424
+# k3: 0.2759048596577784
+# fx: 3921.84114
+# fy: 3920.81719
+# u0: 1192.4926
+# v0: 997.0636
+# k1: -0.2714
+# k2: 0.1602
+# k3: 0.3524
+# p1: 0
+# p2: 0
+# fx: 3831.490433260494
+# fy: 3829.358257057234
+# u0: 1198.721836997761
+# v0: 1022.361674165554
+# k1: -0.2338759204057668
+# k2: -0.3425195953687311
+# k3: 2.761914917415311
+# p1: 0
+p2: 0
+pa: 0
+pb: 0
+pc: 0
+tx: 0
+ty: 0
+tz: 0
+rx: 0
+ry: 0
+rz: 0

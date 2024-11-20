@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(wcq_lib)
+project(LVS_ST_CALIB)
 
 option(BUILD_SHARED_LIBS "Build shared gtsam library, instead of static" ON)
 
@@ -53,6 +53,9 @@ include_directories(${GTSAM_INCLUDE_DIR})
 find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
+find_package(Pangolin REQUIRED)
+include_directories(${Pangolin_INCLUDE_DIRS})
+
 # # ros
 # find_package(catkin REQUIRED COMPONENTS roscpp)
 # catkin_package(
@@ -90,6 +93,7 @@ set_target_properties(wio_factor_lib PROPERTIES
 message("PROTOBUF INCLUDES: " ${PROTOBUF_INCLUDE_DIRS})
 set(ABB_EGM_SOURCE
     src/egm/egm_control.cpp
+    src/egm/handeye_path_control.cpp
     include/egm/egm.pb.cc)
 add_library(abb_egm_lib ${ABB_EGM_SOURCE})
 target_include_directories(abb_egm_lib PUBLIC
@@ -101,6 +105,8 @@ target_link_libraries(abb_egm_lib PUBLIC
     Boost::regex
     Boost::system
     Boost::thread
+    gtsam 
+    gtsam_unstable
     ${PROTOBUF_LIBRARIES}
     Threads::Threads)
 set_target_properties(abb_egm_lib PROPERTIES
@@ -112,7 +118,10 @@ set_target_properties(abb_egm_lib PROPERTIES
 #############################################################################################
 # Laser Camera Sensor Calibration 
 set(XYF_CALIBRATION_SOURCE
-    src/laser_camera_cal.cpp)
+    src/laser_camera_cal.cpp
+    src/laser_camera_cal.cpp
+    src/hand_eye_calibration.cpp
+    src/td_factor.cpp)
 
 add_library(laser_camera_cal ${XYF_CALIBRATION_SOURCE})
 target_include_directories(laser_camera_cal PUBLIC ${GTSAM_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${EIGEN_INCLUDE_DIR})
@@ -138,9 +147,24 @@ set_target_properties(sensors_wrapper_lib PROPERTIES
     SOVERSION           ${abb_wrapper_soversion}
 )
 
-#############################################################################################
-# Test App
+############################################################################################
+# SLAM
+set(SENSORS_SOURCE
+    src/charuco_create_detect.cpp)
+add_library(slam_lib ${SENSORS_SOURCE})
+target_include_directories(slam_lib PUBLIC })
+target_link_libraries(slam_lib PUBLIC pthread ${OpenCV_LIBS})
 
+set_target_properties(slam_lib PROPERTIES
+    OUTPUT_NAME         slam_lib
+    CLEAN_DIRECT_OUTPUT 1
+    VERSION             1.0
+    SOVERSION           1.0
+)
+
+# APP
+
+########################################## WIO #########################################
 add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
 target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
 
@@ -153,19 +177,67 @@ target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
 add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
 target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
+
+######################################### Calibration ###################################
 add_executable(laser_camera_calib app/laser_camera_calib.cpp)
-target_link_libraries(laser_camera_calib laser_camera_cal)
+target_link_libraries(laser_camera_calib laser_camera_cal gtsam gtsam_unstable)
 
 add_executable(camera_calibration app/camera_calibration.cpp)
-target_link_libraries(camera_calibration laser_camera_cal)
+target_link_libraries(camera_calibration laser_camera_cal gtsam gtsam_unstable)
+
+add_executable(fillet_weld_detector app/fillet_weld_detector.cpp)
+target_link_libraries(fillet_weld_detector laser_camera_cal gtsam gtsam_unstable)
 
 add_executable(laser_line_detector app/laser_line_detector.cpp)
-target_link_libraries(laser_line_detector laser_camera_cal)
+target_link_libraries(laser_line_detector laser_camera_cal gtsam gtsam_unstable)
 
 add_executable(daheng_camera app/test_daheng_camera.cpp)
 target_link_libraries(daheng_camera sensors_wrapper_lib)
 
+add_executable(test_charuco app/test_charuco_cv.cpp)
+target_link_libraries(test_charuco slam_lib)
+
+######################################### Handeye ########################################
+add_executable(plot_tracjectory app/plot_tracjectory.cpp)
+target_link_libraries(plot_tracjectory ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(plot_end_effector app/plot_end_effector.cpp)
+target_link_libraries(plot_end_effector ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(test_handeye app/test_handeye.cpp)
+target_link_libraries(test_handeye ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(sensor_evaluation app/sensor_evaluation.cpp)
+target_link_libraries(sensor_evaluation ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(align_LVS_EGM app/align_LVS_EGM.cpp)
+target_link_libraries(align_LVS_EGM ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(align_LVS_EGM1 app/align_LVS_EGM1.cpp)
+target_link_libraries(align_LVS_EGM1 ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(align_LVS_EGM2 app/align_LVS_EGM2.cpp)
+target_link_libraries(align_LVS_EGM2 ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(sim_lvrws app/sim_lvrws.cpp)
+target_link_libraries(sim_lvrws ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(calib_td_sim app/calib_td_sim.cpp)
+target_link_libraries(calib_td_sim ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(td_Factor_test app/td_factor_test.cpp)
+target_link_libraries(td_Factor_test gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(timestamp_process app/timestamp_process.cpp)
+target_link_libraries(timestamp_process gtsam gtsam_unstable laser_camera_cal)
+
+add_executable(spatiotemporal_calibration_lvs app/spatiotemporal_calibration_lvs.cpp)
+target_link_libraries(spatiotemporal_calibration_lvs ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
+
+######################################### EGM ############################################
 add_executable(abb_egm_example app/abb_egm_example.cpp)
 target_link_libraries(abb_egm_example abb_egm_lib)
 
+add_executable(plot_egm app/plot_egm.cpp)
+target_link_libraries(plot_egm ${Pangolin_LIBRARIES} gtsam gtsam_unstable laser_camera_cal)
 #############################################################################################

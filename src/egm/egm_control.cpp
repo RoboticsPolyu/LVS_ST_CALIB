@@ -83,6 +83,10 @@ void Robot::initRobot() {
 	nextRobotEuler[0] = RobotEuler[0] = initRobotEuler[0] = initRobMessage->feedback().cartesian().euler().x();
 	nextRobotEuler[1] = RobotEuler[1] = initRobotEuler[1] = initRobMessage->feedback().cartesian().euler().y();
 	nextRobotEuler[2] = RobotEuler[2] = initRobotEuler[2] = initRobMessage->feedback().cartesian().euler().z();
+	nextRobotQu[0] = RobotQu[0] = initRobotQu[0] = initRobMessage->feedback().cartesian().orient().u0();
+	nextRobotQu[1] = RobotQu[1] = initRobotQu[1] = initRobMessage->feedback().cartesian().orient().u1();
+	nextRobotQu[2] = RobotQu[2] = initRobotQu[2] = initRobMessage->feedback().cartesian().orient().u2();
+	nextRobotQu[3] = RobotQu[3] = initRobotQu[3] = initRobMessage->feedback().cartesian().orient().u3();
 	nextRobotJoint[0] = RobotJoint[0] = initRobotJoint[0] = initRobMessage->feedback().joints().joints(0);
 	nextRobotJoint[1] = RobotJoint[1] = initRobotJoint[1] = initRobMessage->feedback().joints().joints(1);
 	nextRobotJoint[2] = RobotJoint[2] = initRobotJoint[2] = initRobMessage->feedback().joints().joints(2);
@@ -94,7 +98,7 @@ void Robot::initRobot() {
 	egm_debug_log.open("egm_vel.txt", std::ios::trunc);
 }
 
-inline void Robot::RobotSetCartesian(bool SetSpeed) {
+inline void Robot::RobotSetCartesian(bool SetSpeed, bool use_quat) {
 	/**
 		Adds cartesian position and speed values to
 		a PC outbound message to guide the robot
@@ -113,13 +117,24 @@ inline void Robot::RobotSetCartesian(bool SetSpeed) {
 	robc->set_x(RobotPos[0]);
 	robc->set_y(RobotPos[1]);
 	robc->set_z(RobotPos[2]);
-
-	abb::egm::EgmEuler *robeu = new abb::egm::EgmEuler();
-	robeu->set_x(RobotEuler[0]);
-	robeu->set_y(RobotEuler[1]);
-	robeu->set_z(RobotEuler[2]);
-	abb::egm::EgmPose *robcartesian = new abb::egm::EgmPose();
-	robcartesian->set_allocated_euler(robeu);
+	abb::egm::EgmPose *robcartesian = new abb::egm::EgmPose();	
+	if(use_quat)
+	{
+		abb::egm::EgmQuaternion *robqu = new abb::egm::EgmQuaternion();
+		robqu->set_u0(RobotQu[0]);
+		robqu->set_u1(RobotQu[1]);
+		robqu->set_u2(RobotQu[2]);
+		robqu->set_u3(RobotQu[3]);
+		robcartesian->set_allocated_orient(robqu);
+	}
+	else
+	{
+		abb::egm::EgmEuler *robeu = new abb::egm::EgmEuler();
+		robeu->set_x(RobotEuler[0]);
+		robeu->set_y(RobotEuler[1]);
+		robeu->set_z(RobotEuler[2]);
+		robcartesian->set_allocated_euler(robeu);
+	}
 	robcartesian->set_allocated_pos(robc);
 	abb::egm::EgmPlanned *planned = new abb::egm::EgmPlanned();
 	planned->set_allocated_cartesian(robcartesian);
@@ -141,7 +156,7 @@ inline void Robot::RobotSetCartesian(bool SetSpeed) {
 	}
 }
 
-void Robot::GetFeedbackPose(float &x, float& y, float& z, float &e_x, float& e_y, float& e_z)
+void Robot::GetFeedbackPose(float &x, float& y, float& z, float &e_x, float& e_y, float& e_z, float quat[4])
 {
 	x = fromMechUnit->feedback().cartesian().pos().x();
 	y = fromMechUnit->feedback().cartesian().pos().y();
@@ -149,6 +164,10 @@ void Robot::GetFeedbackPose(float &x, float& y, float& z, float &e_x, float& e_y
 	e_x = fromMechUnit->feedback().cartesian().euler().x();
 	e_y = fromMechUnit->feedback().cartesian().euler().y();
 	e_z = fromMechUnit->feedback().cartesian().euler().z();
+	quat[0] = fromMechUnit->feedback().cartesian().orient().u0();
+	quat[1] = fromMechUnit->feedback().cartesian().orient().u1();
+	quat[2] = fromMechUnit->feedback().cartesian().orient().u2();
+	quat[3] = fromMechUnit->feedback().cartesian().orient().u3();
 }
 
 inline void Robot::RobotSetJoint(bool SetSpeed) {
@@ -342,7 +361,7 @@ inline void Robot::LogJointData(int msg_no, bool Readable) {
 
 void Robot::WriteCycleCartesian(float* cycle_time) {
 	std::chrono::time_point<std::chrono::steady_clock> start_write_cartesian = std::chrono::steady_clock::now();
-	RobotSetCartesian();
+	RobotSetCartesian(true, false);
 	EGMSend();
 	if (cycle_time != nullptr)
 		*cycle_time = float(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start_write_cartesian).count() / 1000000.0);
@@ -370,114 +389,4 @@ void Robot::FeedbackCycleJoint(int msg_no, float* cycle_time, bool Readable) {
 	LogJointData(msg_no,Readable);
 	if (cycle_time != nullptr)
 		*cycle_time = float(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start_feedback_joint).count() / 1000000.0);
-}
-
-void Track::initTrack() {
-	/**
-		Initialize UDP communication
-		Read the inital joint value from the track
-	**/
-
-	// create socket to listen from Robot
-	sock = ::socket(AF_INET, SOCK_DGRAM, 0);
-	memset(&serverAddr, sizeof(serverAddr), 0);
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(port);
-	// listen on all interfaces
-	::bind(sock, (struct sockaddr*) & serverAddr, sizeof(serverAddr));
-	len_recieve = sizeof(ProtoMessage);
-	int n = recvfrom(sock, ProtoMessage, 1400, 0, (struct sockaddr*) & Addr, &len_recieve);
-	if (n < 0)
-	{
-		std::cout << "Communication with " << MechID << " failed.\n\n";
-		return;
-	}
-	abb::egm::EgmRobot* initTrackMessage = new abb::egm::EgmRobot();
-	initTrackMessage->ParseFromArray(ProtoMessage, n);
-	// Store the initial joint and cartesian values in the class members
-	nextTrackJoint = TrackJoint = initTrackJoint = initTrackMessage->feedback().externaljoints().joints(0);
-	delete initTrackMessage;
-	log.open(MechID.append(" - log.txt"), std::ios::trunc);
-}
-
-inline void Track::TrackSetJoint(bool SetSpeed) {
-	/**
-		Add an exteral axis joint value and speed 
-		to a PC outbound message
-	**/
-	toMechUnit = new abb::egm::EgmSensor();
-
-	abb::egm::EgmHeader* header = new abb::egm::EgmHeader();
-	header->set_mtype(abb::egm::EgmHeader_MessageType_MSGTYPE_CORRECTION);
-	header->set_seqno(seq_no++);
-	header->set_tm(GetTickCount());
-	toMechUnit->set_allocated_header(header);
-
-	//Set external axis joint value
-	abb::egm::EgmJoints *track_eax = new abb::egm::EgmJoints();
-	track_eax->add_joints(TrackJoint);
-	abb::egm::EgmPlanned *planned = new abb::egm::EgmPlanned();
-	planned->set_allocated_externaljoints(track_eax);
-	toMechUnit->set_allocated_planned(planned);
-
-	if (SetSpeed) {
-		//Set external axis joint speed
-		abb::egm::EgmJoints *ExtJointSpeed = new abb::egm::EgmJoints();
-		ExtJointSpeed->add_joints(TrackJointSpeed);
-		abb::egm::EgmSpeedRef *setSpeed = new abb::egm::EgmSpeedRef();
-		setSpeed->set_allocated_externaljoints(ExtJointSpeed);
-		toMechUnit->set_allocated_speedref(setSpeed);
-	}
-}
-
-inline void Track::LogTrackData(int msg_no, bool Readable) {
-	/**
-		Displays the joint data from the inbound track message
-	**/
-	if (msg_no == 1) {
-		first_msg_time = fromMechUnit->header().tm();
-		if (!Readable){
-			//log << "Msg No, Track Seq No., Time, planned, feedback" << std::endl;
-		}
-	}
-	if (fromMechUnit->has_header() && fromMechUnit->header().has_seqno() &&
-		fromMechUnit->header().has_tm() && fromMechUnit->header().has_mtype())
-	{
-		float time_ms = float((fromMechUnit->header().tm() - first_msg_time) / 1000.0);
-		if (Readable) {
-			// print header
-			log << "Msg No. = " << msg_no << "\t Track Seq No. = " << fromMechUnit->header().seqno() 
-				<< "\t Time =" << time_ms << std::endl;
-			//print planned and feedback external axis values
-			log << std::fixed << std::setprecision(4) << "planned: " << fromMechUnit->planned().externaljoints().joints(0) 
-				<< "\tfeedback: " << fromMechUnit->feedback().externaljoints().joints(0) << std::endl << std::endl;
-		}
-		else {
-			log << msg_no << "," << fromMechUnit->header().seqno() << "," << std::fixed << std::setprecision(4) << time_ms << "," 
-				<< fromMechUnit->planned().externaljoints().joints(0) << "," 
-				<< fromMechUnit->feedback().externaljoints().joints(0) << std::endl;
-		}
-		}
-	else
-	{
-		log << "No track header\n\n";
-	}
-	delete fromMechUnit;
-}
-
-void Track::WriteCycleTrack(float* cycle_time) {
-	std::chrono::time_point<std::chrono::steady_clock> start_write = std::chrono::steady_clock::now();
-	TrackSetJoint();
-	EGMSend();
-	if (cycle_time != nullptr)
-		*cycle_time = float(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start_write).count() / 1000000.0);
-}
-
-void Track::FeedbackCycleTrack(int msg_no, float* cycle_time, bool Readable) {
-	std::chrono::time_point<std::chrono::steady_clock> start_feedback = std::chrono::steady_clock::now();
-	EGMRecieve();
-	LogTrackData(msg_no, Readable);
-	if (cycle_time != nullptr)
-		*cycle_time = float(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start_feedback).count() / 1000000.0);
 }

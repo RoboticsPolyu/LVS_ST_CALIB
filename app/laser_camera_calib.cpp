@@ -6,22 +6,23 @@
 
 int main(void)
 {
-    ofstream pattern_3d_point_fs;
+    std::ofstream pattern_3d_point_fs;
     pattern_3d_point_fs.open("pattern_3dpoint.txt");
 
-  	calibration::LaserCameraCal laser_camera_calib;
+  	calibration::LaserCameraCalib laser_camera_calib;
     laser_camera_calib.LoadParameter("../config/slc_config.yaml");
-    laser_camera_calib.MultiImageCalibration();
+    laser_camera_calib.Calibrate();
 
-    cv::FileStorage laser_line_file("detect_line.yaml" ,cv::FileStorage::READ);
     Eigen::Vector4f light_points;
     int valid_image_size = laser_camera_calib.GetValidImageSize();
     laser_camera_calib.LaserLineDetector();
     
     std::vector<Eigen::Vector3f> lt_3dpoint_all_plane;
-    std::vector<calibration::LaserCameraCal::StraightLine> straight_lines;
+    std::vector<calibration::LaserCameraCalib::StraightLine> straight_lines;
     laser_camera_calib.GetLaserLines(straight_lines);
     assert(valid_image_size == straight_lines.size());
+
+    laser_camera_calib.CalibrateWithCrossRatio();
 
     for(int i = 0; i < valid_image_size; i++)
     {
@@ -67,11 +68,10 @@ int main(void)
         H_matrix(i, 2) = 1.0f;
         Z_vector(i) = point(2);
     }
+    // pa*x + pb*y + 1 = pc*z
 
     Eigen::Vector3f abc_coeff = (H_matrix.transpose()* H_matrix).inverse()* H_matrix.transpose()* Z_vector;
     std::cout << "abc_coeff: \n" << abc_coeff <<std::endl;
-
-    laser_line_file.release();
 
     return 0;
 }

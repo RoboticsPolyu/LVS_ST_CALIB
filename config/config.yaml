@@ -1,17 +1,202 @@
 corner_rows: 7
 corner_cols: 10
-cornersize_rows: 3
-cornersize_cols: 3
-fold_path: "/home/yang/Desktop/calib3"
+cornersize_rows: 6                                
+cornersize_cols: 6
+# 20210914
+# fold_path: "/dataset/20210914_IN"
+# fold_path: "/dataset/20210914_SQ2"
+# egm_path: "/dataset/20210914_SQ2/info/egm_data.txt"
+
+# fold_path: "/dataset/20211225_LEFT_SLOPE_HE"
+# egm_path: "/dataset/20211225_LEFT_SLOPE_HE/info/egm_data.txt"
+
+fold_path: "/dataset/220727_HE/image"
+egm_path: "/dataset/220727_HE/data/egm_data.txt"
+trajectory_file: "/home/yangpeiwen/Documents/ypw/wcq_lab/build/pattern_pose_file.txt"
+
+# 1 jhf 2 C-type or S-type
+weld_type: 2
+
+# feature_file_path: "/dataset/20220611ZX/uv.txt"
+# feature_egm_path: "/dataset/20220611ZX/data/egm_data.txt"
+
+# feature_file_path: "/dataset/20220511DT/common/uv.txt"
+# feature_egm_path: "/dataset/20220511DT/data/t_egm_record.txt"
+# image_timestamp_path: "/dataset/20220511DT/data/t_img_record.txt"
+# image_self_timestamp_path: "/dataset/20220511DT/data/image_self_timestamp.txt"
+
+# feature_file_path: "/dataset/20220601DTHE/uvall.txt"
+# feature_egm_path: "/dataset/20220601DTHE/t_egm.txt"
+# image_timestamp_path: "/dataset/20220601DTHE/t_img.txt"
+
+# feature_file_path: "/dataset/20220611TD3/uv.txt"
+# feature_egm_path: "/dataset/20220611TD3/egm.txt"
+# image_timestamp_path: "/dataset/20220611TD3/img.txt"
+
+# feature_file_path: "/dataset/220727_LINE/data/uv.txt"
+# feature_egm_path: "/dataset/220727_LINE/data/egm_data.txt"
+
+# feature_file_path: "/dataset/20220611TD2/common/uv.txt"
+# feature_egm_path: "/dataset/20220611TD2/data/t_egm_record.txt"
+# image_timestamp_path: "/dataset/20220611TD2/data/t_img_record.txt"
+# feature_file_path: "/dataset/220727_TD/uv.txt"
+# feature_egm_path: "/dataset/220727_TD/egm.txt"
+# image_timestamp_path: "/dataset/220727_TD/img.txt"
+
+feature_file_path: "/dataset/C_WELD/220728_C_O2_80/data/uv.txt"
+feature_egm_path: "/dataset/C_WELD/220728_C_O2_80/data/t_egm_record.txt"
+image_timestamp_path: "/dataset/C_WELD/220728_C_O2_80/data/t_img_record.txt"
+
+# feature_file_path: "/dataset/20220611TD3/O1/common/uv.txt"
+# feature_egm_path: "/dataset/20220611TD3/O1/data/egm_filter.txt"
+# image_timestamp_path: "/dataset/20220611TD3/O1/data/b.txt"
+
+# feature_egm_path: "/dataset/20220601DTHE/O2/data/t_egm_record.txt"
+# image_timestamp_path: "/dataset/20220601DTHE/O2/data/t_img_record.txt"
+
+# DT1: 0.00192673
+# DT2: 0.0242545
+# DT3: 0.0219568
+# DT4: 0.152194
+# DT5: 0.0228418
+# DT6: 0.0137259
+# DT7: 0.0239736
+# DT8: 0.0125695
+
+DT: 0.0253757 # 0.0240874
+dt_test:  0 #-0.02 #-0.0173 #0.0222657 #0.0240874
+#0.0240874
+
+ERROR_THR: 2000.0
+kt: 1
+kp: 0.2
+kr: 0.2 # rotation not obse
+km: 0.2
+ko: 0.12
+
+ITER_NUM: 1
+EXT_OPT: true
+PL_OPT:  true
+TD_OPT:  true
+
+STEP: 1
+
+# 20220727 
+# FanJunFeng's method
+# ext1:  0.0188481
+# ext2: -0.00479824
+# ext3:    -1.61063
+# ext4:   -45.9144
+# ext5:   -53.1572
+# ext6:    -120.839
+
+# after handeye opt based on line constraint
+ext1: -0.0303399
+ext2: 0.0472667
+ext3: -1.66194
+ext4:  -52.4326
+ext5:   -55.433
+ext6:  -126.273
+
+#before 20220727
+# ext1: 0.0602827
+# ext2: 0.0689038
+# ext3: -1.62332
+# ext4: -80.6678
+# ext5: -137.967
+# ext6:   167.97
+
+
+# ext1: 0.0544116
+# ext2: 0.0747089
+# ext3: -1.62585
+# ext4: -81.5927
+# ext5: -139.517
+# ext6: 167.12
+
+# ms
+# feature_file_path: "/Datasets/JHF/jhf_o3.txt"
+# feature_egm_path: "/Datasets/JHF/egm_data_o3.txt"
+
+# feature_file_path: "/Dataset/DYNAMIC_EXP_SEAM/Big_SIN_GT/ypw.txt"
+# feature_egm_path: "/Dataset/DYNAMIC_EXP_SEAM/Big_SIN_GT/egm_data.txt"
+
+# feature_file_path: "/Dataset/DYNAMIC_EXP_SEAM/dataset_Z1_Cir_Big2-8/dataset_Z1_Cir_Big/Z1_Cir_Big_O1_5mm_over/ypw.txt"
+# feature_egm_path: "/Dataset/DYNAMIC_EXP_SEAM/dataset_Z1_Cir_Big2-8/dataset_Z1_Cir_Big/Z1_Cir_Big_O1_5mm/egm_data.txt"
+
+# feature_file_path: "/Dataset/dataset_Z1_Cir_Big2-8/dataset_Z1_Cir_Big/Z1_Cir_Big_O2_over/ypw.txt"
+# feature_egm_path: "/Dataset/dataset_Z1_Cir_Big2-8/dataset_Z1_Cir_Big/Z1_Cir_Big_O2/egm_data.txt"
+
 line_image_path: ""
 camera_model: 1
-use_intrinsic: false
-fx: 3579.9265
-fy: 3578.2289
-u0: 1188.9616
-v0: 1028.0973
-k1: -0.2315
-k2: 0.2450
-k3: -0.5092
+use_intrinsic: true
+
+# 20220727_intrinsic
+fx: 3671.816149167293
+fy: 3673.054767823902
+u0: 1202.05292881891
+v0: 1012.724880485216
+k1: -0.2247568439561717
+k2: 0.1827051018453399
+k3: -0.4200880191381967
 p1: 0
 p2: 0
+
+# 20210914
+# fx: 3597.8882
+# fy: 3599.5422
+# u0: 1211.2184
+# v0: 1007.1196
+# k1: -0.2307
+# k2: 0.1734
+# k3: -0.2950
+# p1: 0
+# p2: 0
+
+# PB: 2.10364
+# PC: 112.796
+
+# 20220510
+# PA: -0.0142149
+# PB: 2.10725
+# PC: 113.059
+
+# 20220727
+PA: 0.0359644
+PB: 2.12175
+PC:  130.732
+
+# PA: 0.0359644
+# PB: 2.12175
+# PC:  130.732
+# 20220611
+# PA: -0.035662
+# PB: 1.85991
+# PC: 97.3067
+
+
+# PA: -0.0320548
+# PB: 1.88094
+# PC: 100.933
+# 20210907
+# fx: 3921.84114
+# fy: 3920.81719
+# u0: 1192.4926
+# v0: 997.0636
+# k1: -0.2714
+# k2: 0.1602
+# k3: 0.3524
+# p1: 0
+# p2: 0
+
+
+# 20210907 before
+# fx: 3646.04597583021
+# fy: 3644.91001281215
+# u0: 1187.703000972475
+# v0: 1010.344502486683
+# k1: -0.2296342593526222
+# k2: 0.09881656731298424
+# k3: 0.2759048596577784
+# p1: 0
+# p2
