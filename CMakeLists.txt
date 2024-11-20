@@ -79,14 +79,6 @@ ELSEIF(APPLE)
 ENDIF()
 
 message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
-add_library(wio_factor_lib ${WIO_SOURCE})
-target_include_directories(wio_factor_lib PUBLIC ${GTSAM_INCLUDE_DIR})
-target_link_libraries(wio_factor_lib PUBLIC gtsam gtsam_unstable)
-set_target_properties(wio_factor_lib PROPERTIES
-    OUTPUT_NAME         wio_factor_lib
-    CLEAN_DIRECT_OUTPUT 1
-    VERSION             ${wio_factor_version}
-    SOVERSION           ${wio_factor_soversion})
 
 ###########################################################################################
 # ABB EGM LIBRARIE
@@ -163,19 +155,6 @@ set_target_properties(slam_lib PROPERTIES
 )
 
 # APP
-
-########################################## WIO #########################################
-add_executable(wheel_imu_factor app/test_wheel_imu_factor.cpp)
-target_link_libraries(wheel_imu_factor gtsam wio_factor_lib)
-
-add_executable(wheel_imu_pim app/test_wheel_imu_pim.cpp)
-target_link_libraries(wheel_imu_pim gtsam wio_factor_lib)
-
-add_executable(wheel_imu_error app/test_wheel_imu_error.cpp)
-target_link_libraries(wheel_imu_error gtsam wio_factor_lib)
-
-add_executable(wheel_imu_isam app/wheel_imu_isam.cpp)
-target_link_libraries(wheel_imu_isam gtsam gtsam_unstable wio_factor_lib)
 
 
 ######################################### Calibration ###################################
