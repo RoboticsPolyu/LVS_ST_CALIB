@@ -1,6 +1,8 @@
 # Spatiotemporal Calibration for Laser Vision Sensor in Hand-eye System Based on Straight-line Constraint
 
-This repository contains our experimental data, including measured robot end-effector's pose and images. Videos of the calibration data collection process are also available at: [https://drive.google.com/drive/folders/1Pr17LXiu3qDicMFDcD92kjfhX2Ftdzxk?usp=share_link](https://)
+The paper was submitted to *IEEE TIE*. We developed a *laser vision sensor*, which can be used for 3D construction, welding, etc. This research proposed a teaching-free quick spatiotemporal calibration method, only relying on a common straight object. 
+
+This repository contains our experimental data, including measured robot end-effector's pose and images. Videos of the calibration data collection process are also available at: [https://drive.google.com/drive/folders/1Pr17LXiu3qDicMFDcD92kjfhX2Ftdzxk?usp=share_link](https://drive.google.com/drive/folders/1Pr17LXiu3qDicMFDcD92kjfhX2Ftdzxk?usp=share_link)
 
 If you have any question, feel free to contact me: peiwen1.yang@connect.polyu.hk
 
